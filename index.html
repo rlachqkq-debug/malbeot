@@ -33,6 +33,9 @@ button{cursor:pointer}
 .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .who h1{font-family:var(--display);font-weight:800;font-size:26px;margin:0;line-height:1.1}
 .who p{margin:0;color:var(--muted);font-size:13px}
+.lv{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.lv span{flex:1;font-variant-numeric:tabular-nums}
+.lv button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:13px;color:var(--ink)}
 .gear{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:13px}
 
 .chat{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-block:4px}
@@ -108,6 +111,12 @@ input[type=range]{accent-color:var(--accent);width:100%}
       <p id="status">마이크를 누르고 말해 보세요</p>
     </div>
     <button class="gear" id="openSet" type="button" aria-label="설정 열기">설정</button>
+  </div>
+
+  <div class="lv">
+    <span id="lvOut">난이도 1 / 10</span>
+    <button type="button" id="lvDown">쉽게</button>
+    <button type="button" id="lvUp">어렵게</button>
   </div>
 
   <div class="chat" id="chat" aria-live="polite"></div>
@@ -201,7 +210,7 @@ var HELLO={
  "zh-CN":["你好!很高兴见到你。今天我们聊什么?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "es-ES":["¡Hola! Me alegro de verte. ¿De qué hablamos hoy?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "fr-FR":["Salut ! Content de te voir. De quoi on parle aujourd'hui ?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"]};
-var DEF={who:"adult",age:"",lang:"de-DE",level:"초급",likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
+var DEF={who:"adult",age:"",lang:"de-DE",level:"왕초보",lv:1,streak:0,miss:0,likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
   rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, 명사 대문자, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-4-5-20251001"};
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
@@ -239,7 +248,7 @@ function bubble(m,veil){
     if(cfg.showOpts&&m.options&&m.options.length){var o=el("div","opts x");o.appendChild(el("small",null,"이렇게 답해 봐"));
       m.options.forEach(function(x){var row=el("div","opt"),tx=el("div","optt");tx.appendChild(wordify(el("b"),x.t,m,b));tx.appendChild(el("em",null,x.ko));row.appendChild(tx);
         var h=el("button",null,"듣기");h.type="button";h.onclick=function(e){e.stopPropagation();speak(x.t,null)};
-        var sd=el("button",null,"이걸로 답하기");sd.type="button";sd.onclick=function(e){e.stopPropagation();send(x.t)};
+        var sd=el("button",null,"이걸로 답하기");sd.type="button";sd.onclick=function(e){e.stopPropagation();send(x.t,true)};
         row.appendChild(h);row.appendChild(sd);o.appendChild(row)});b.appendChild(o);}
     b.onclick=function(){b.classList.remove("veil")};
   }
@@ -277,24 +286,38 @@ function speak(text,done){
 }
 
 /* ---------- 생각 (AI) ---------- */
+var LV=["",
+ "한 문장, 단어 3~5개. 현재형만. 가장 기본 단어만(인사, 이름, 네/아니요, 숫자, 좋다/나쁘다). 질문은 네/아니요나 한 단어로 답할 수 있는 것만. 장면은 인사·자기소개 수준. 전문 용어 금지.",
+ "한 문장, 단어 4~6개. 현재형만. 기본 동사(이다, 가지다, 하다, 가다, 오다, 원하다)와 일상 명사. 질문은 짧은 한 문장으로 답할 수 있는 것. 장면은 커피 주문·출근 인사 수준. 전문 용어는 한 번에 1개까지.",
+ "한두 문장, 문장당 단어 5~7개. 현재형. 목적어가 있는 문장과 기본 형용사. 전문 용어는 한 번에 1개까지.",
+ "한두 문장, 문장당 단어 6~8개. 현재형과 조동사(할 수 있다, 해야 한다, 하고 싶다). 간단한 업무 장면.",
+ "두 문장, 문장당 단어 7~9개. 전치사구, 분리동사나 그에 해당하는 구문. 업무 장면.",
+ "두 문장, 문장당 단어 8~10개. 과거를 말하는 가장 흔한 시제 추가.",
+ "두 문장. 이유나 내용을 잇는 종속절(~때문에, ~라고) 추가.",
+ "두세 문장. 업무 어휘를 자유롭게. 정중한 표현과 편한 표현을 구분.",
+ "두세 문장. 관용 표현과 자연스러운 구어 문장.",
+ "제한 없음. 원어민 동료에게 말하듯."];
+function lvNow(){return Math.min(10,Math.max(1,Number(cfg.lv)||1))}
+function showLv(){var e=$("lvOut"); if(e)e.textContent="난이도 "+lvNow()+" / 10"}
+function setLv(n,why){var o=lvNow(); cfg.lv=Math.min(10,Math.max(1,n)); cfg.streak=0; cfg.miss=0; save("mb_cfg",cfg); showLv(); if(cfg.lv!==o&&why)note(why+" (난이도 "+cfg.lv+" / 10)")}
 function rules(){
   var L=LANGS[cfg.lang]||cfg.lang;
   return [
    "너는 '"+(cfg.friend||"친구")+"'라는 이름의 말하기 연습 상대야. 한국어를 쓰는 사람이 "+L+" 말하기를 연습하도록 돕는다.",
    "[내 사용설명서]",
    "- 쓰는 사람: "+(cfg.who==="child"?"아이":"성인")+(cfg.age?" / 나이 "+cfg.age+"세":""),
-   "- 배울 언어: "+L+" ("+cfg.lang+") / 수준: "+cfg.level,
+   "- 배울 언어: "+L+" ("+cfg.lang+") / 지금 난이도: "+lvNow()+"/10 (1이 가장 쉬움)",
    "- 좋아하는 것·이야기하고 싶은 것: "+(cfg.likes||"자유"),
    "- 한 번 대화 시간: 약 "+cfg.minutes+"분",
    "- 따라 말하기 양: "+cfg.repeat+" (없음=repeat 항상 빈칸, 조금=서너 번에 한 번, 많이=거의 매번)",
    "[대화 규칙]",
-   "- 수준에 맞는 짧은 문장 1~2개로 말하고, 끝에 쉬운 질문 하나를 붙여 대화를 이어 가.",
+   "- 난이도 "+lvNow()+"/10을 반드시 지켜: "+LV[lvNow()]+" 이 범위를 넘는 문법, 긴 문장, 어려운 단어는 절대 쓰지 마. repeat와 options도 같은 난이도로 맞춰. 끝에 질문 하나를 붙여 대화를 이어 가.",
    "- 상대가 한국어로 말하면 그 말을 "+L+"로 어떻게 하는지 알려 주고 repeat에 넣어. (질문일 때는 아래 질문 규칙을 따라.)",
    "- 질문 규칙: 상대가 단어·문법·표현에 대해 물으면(한국어든 "+L+"든) note에 한국어로 2~4문장으로 답해. 기본형이 뭔지, 왜 그 형태가 됐는지(격·성·수·시제 등), 짧은 예문 하나. 그다음 say로 하던 장면을 자연스럽게 이어 가. 질문이 아니면 note는 빈칸.",
    "- 상대가 "+L+"로 틀리게 말하면 고친 문장을 자연스럽게 다시 말해 주고 repeat에 넣어. 꾸짖지 마.",
    (cfg.who==="child"?"- 아이에게 맞는 밝고 안전한 내용만 말해. 한국어는 쉬운 반말로.":
     "- 말투와 성격: 담백하고 편한 친구. 한국어(ko, fix, 뜻)는 전부 반말로, 짧게, 결론부터 말해. 존댓말(~요, ~습니다) 쓰지 마. 호들갑, 과한 칭찬, 감탄사 남발, 이모지 금지. 잘한 건 한마디로만 인정하고 넘어가. 틀린 건 돌려 말하지 말고 바로 짚되 깎아내리지는 마. 모르는 건 아는 척하지 마. 가끔 가벼운 농담은 괜찮아. "+L+"는 친구 사이 말투(예: 독일어면 du)로 자연스럽게."),
-   (cfg.who!=="child"&&cfg.slang?"- 슬랭·욕설: 원어민이 동료나 친구끼리 실제로 쓰는 구어체 슬랭과 욕설을 가끔(서너 번에 한 번쯤) 자연스럽게 섞어. 매번 넣지는 마. 쓸 때는 words의 ko에 '(속어)', '(욕, 친한 사이에서만)', '(상사·고객 앞에선 금지)'처럼 수위와 써도 되는 자리를 꼭 적어. 특정 집단을 비하하는 혐오 표현은 쓰지 마.":"- 슬랭이나 욕설은 쓰지 마."),
+   (cfg.who!=="child"&&cfg.slang&&lvNow()>=4?"- 슬랭·욕설: 원어민이 동료나 친구끼리 실제로 쓰는 구어체 슬랭과 욕설을 가끔(서너 번에 한 번쯤) 자연스럽게 섞어. 매번 넣지는 마. 쓸 때는 words의 ko에 '(속어)', '(욕, 친한 사이에서만)', '(상사·고객 앞에선 금지)'처럼 수위와 써도 되는 자리를 꼭 적어. 특정 집단을 비하하는 혐오 표현은 쓰지 마.":"- 슬랭이나 욕설은 쓰지 마."),
    "- 네가 상황극(롤플레이) 장면을 직접 골라서 시작하고 이끌어. 상대에게 장면을 고르라고 하지 마. 좋아하는 것·이야기하고 싶은 것에 맞는 장면으로, 같은 장면만 되풀이하지 마.",
    "- 상대가 자주 틀리는 것: "+(cfg.weak||"없음")+". 이런 실수가 나오면 fix에 한국어 한 줄로 짧고 직접적으로 짚어 줘. 틀린 게 없으면 fix는 빈칸.",
    "- words: say에 나온 모든 단어를 빠짐없이 순서대로 하나씩 풀이해(한두 개만 넣지 마). w=단어, pron=한글 발음 표기, ko=뜻.",
@@ -431,7 +454,7 @@ function errCopy(e){
   if(c==="refused")return "이 말에는 답할 수 없대요. 다른 말로 해 볼까요?";
   return "답을 받지 못했어요. 한 번 더 말해 주세요.";
 }
-async function send(text){
+async function send(text,viaOption){
   text=(text||"").trim(); if(!text||busy)return;
   if(locked()){note("오늘 정한 시간을 다 썼어요. 내일 또 만나요.",true);return}
   active=true; busy=true;
@@ -439,6 +462,10 @@ async function send(text){
   setStatus("생각하는 중…");
   try{
     var m=clean(await ai(rules(),turns())); prefetch(m);
+    if(!viaOption&&!/[가-힣]/.test(text)){
+      if(m.fix){cfg.streak=0;cfg.miss=(cfg.miss||0)+1; if(cfg.miss>=3&&lvNow()>1){setTimeout(function(){setLv(lvNow()-1,"세 번 연속 걸려서 한 단계 내렸어.")},0)} else save("mb_cfg",cfg)}
+      else{cfg.miss=0;cfg.streak=(cfg.streak||0)+1; if(cfg.streak>=5&&lvNow()<10){setTimeout(function(){setLv(lvNow()+1,"다섯 번 연속 맞아서 한 단계 올렸어.")},0)} else save("mb_cfg",cfg)}
+    }
     hist.push(m); if(hist.length>200)hist=hist.slice(-200); save("mb_hist",hist);
     var b=bubble(m,cfg.audioFirst&&("speechSynthesis" in window));
     setStatus("듣고 따라 해 보세요");
@@ -513,12 +540,13 @@ $("openSet").onclick=openSheet;
 $("s_rate").oninput=function(){$("rateOut").textContent=Number(this.value).toFixed(2)};
 $("setForm").addEventListener("submit",function(e){
   e.preventDefault();
-  var oldLang=cfg.lang;
+  var oldLang=cfg.lang, oldLevel=cfg.level;
   F.forEach(function(k){cfg[k]=$("s_"+k).value});
   cfg.rate=Math.min(1.2,Math.max(0.6,Number(cfg.rate)||0.88)); cfg.limit=Math.max(0,Number(cfg.limit)||0); cfg.minutes=Math.max(1,Number(cfg.minutes)||10);
   cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.voice=$("s_voice").value; if(cfg.key&&!cfg.ckey)cfg.provider="gemini"; if(cfg.ckey&&!cfg.key)cfg.provider="claude"; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked; cfg.slang=$("s_slang").checked;
   cfg.showKo=$("s_showKo").checked; cfg.audioFirst=$("s_audioFirst").checked;
   save("mb_cfg",cfg);
+  if(oldLevel!==cfg.level){cfg.lv={"왕초보":1,"초급":2,"중급":5,"고급":8}[cfg.level]||1;cfg.streak=0;cfg.miss=0;save("mb_cfg",cfg)} showLv();
   if(oldLang!==cfg.lang&&hist.length<=1)hist=[];
   applyCfg(); renderAll(); $("sheet").hidden=true;
 });
@@ -528,6 +556,9 @@ $("wipe").onclick=function(){
   hist=[]; save("mb_hist",hist); wipeArmed=false; this.textContent="지웠어요"; renderAll();
 };
 
+$("lvDown").onclick=function(){if(lvNow()<=1){note("이미 가장 쉬운 단계야.");return} setLv(lvNow()-1,"다음 답부터 더 쉽게 갈게.")};
+$("lvUp").onclick=function(){if(lvNow()>=10){note("이미 가장 어려운 단계야.");return} setLv(lvNow()+1,"다음 답부터 조금 어렵게 갈게.")};
+showLv();
 /* ---------- 시작 ---------- */
 applyCfg(); renderAll();
 if("speechSynthesis" in window){try{speechSynthesis.getVoices()}catch(e){}}
