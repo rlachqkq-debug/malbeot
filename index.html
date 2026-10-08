@@ -56,6 +56,11 @@ button{cursor:pointer}
 .veil .say,.veil .ko,.veil .rep span{filter:blur(7px);user-select:none}
 .rep{margin-top:4px;padding-top:6px;border-top:1px dashed var(--line);font-size:14px;display:flex;flex-direction:column;gap:2px}
 .rep small{color:var(--accent);font-weight:600}
+.tw{cursor:pointer;border-bottom:2px dotted var(--line)}
+.tw.on{background:color-mix(in srgb,var(--accent) 22%,transparent);border-radius:4px}
+.look{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;border:1px solid var(--accent);border-radius:10px;padding:6px 10px;font-size:15px}
+.look i{font-style:normal;color:var(--accent)}.look em{font-style:normal;color:var(--muted)}
+.wd{cursor:pointer}
 .fix{font-size:13px;color:var(--hot);font-weight:600}
 .words{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .wd{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:12px;line-height:1.3}
@@ -233,12 +238,16 @@ function bubble(m,veil){
   if(m.r==="me"){b=el("div","b me");b.appendChild(el("p",null,m.t));}
   else{
     b=el("div","b ai"+(veil?" veil":""));
-    b.appendChild(el("p","say",m.say)); b.firstChild.lang=cfg.lang;
+    var sayP=el("p","say"); sayP.lang=cfg.lang; var look=el("div","look"); look.hidden=true;
+    m.say.split(/(\s+)/).forEach(function(tok){
+      if(!tok.trim()){sayP.appendChild(document.createTextNode(tok));return}
+      var sp=el("span","tw",tok); sp.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();lookup(tok,m,look,sp)}; sayP.appendChild(sp)});
+    b.appendChild(sayP); b.appendChild(look);
     var ko=el("p","ko",m.ko); ko.hidden=!cfg.showKo||!m.ko; b.appendChild(ko);
     if(m.repeat){var r=el("div","rep");r.appendChild(el("small",null,"따라 말해요"));var sp=el("span",null,m.repeat);sp.lang=cfg.lang;r.appendChild(sp);b.appendChild(r);}
     if(m.fix)b.insertBefore(el("p","fix",m.fix),b.firstChild);
     if(cfg.showWords&&m.words&&m.words.length){var w=el("div","words x");
-      m.words.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));w.appendChild(c)});b.appendChild(w);}
+      m.words.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));c.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();sayWord(x.w,x.ko)};w.appendChild(c)});b.appendChild(w);}
     var a=el("div","acts");
     var again=el("button",null,"다시 듣기");again.type="button";again.onclick=function(e){e.stopPropagation();speak(m.say,null)};a.appendChild(again);
     if(m.repeat){var rp=el("button",null,"따라 할 문장 듣기");rp.type="button";rp.onclick=function(e){e.stopPropagation();speak(m.repeat,null)};a.appendChild(rp);}
@@ -301,7 +310,7 @@ function rules(){
    (cfg.who==="child"?"- 아이에게 맞는 밝고 안전한 내용만 말해.":"- 어른 대 어른으로 편하게 말해."),
    "- 네가 상황극(롤플레이) 장면을 직접 골라서 시작하고 이끌어. 상대에게 장면을 고르라고 하지 마. 좋아하는 것·이야기하고 싶은 것에 맞는 장면으로, 같은 장면만 되풀이하지 마.",
    "- 상대가 자주 틀리는 것: "+(cfg.weak||"없음")+". 이런 실수가 나오면 fix에 한국어 한 줄로 짧고 직접적으로 짚어 줘. 틀린 게 없으면 fix는 빈칸.",
-   "- words: say에 나온 단어를 순서대로 하나씩 풀이해. w=단어, pron=한글 발음 표기, ko=뜻.",
+   "- words: say에 나온 모든 단어를 빠짐없이 순서대로 하나씩 풀이해(한두 개만 넣지 마). w=단어, pron=한글 발음 표기, ko=뜻.",
    "- options: 상대가 다음에 할 수 있는 알맞은 답 예시 2~3개. t="+L+" 문장, ko=한국어 뜻. 수준에 맞게 짧게.",
    "[답 형식]",
    '반드시 JSON 하나만: {"say":"'+L+' 문장","ko":"한국어 뜻","repeat":"따라 말할 짧은 문장, 없으면 빈칸","fix":"","words":[{"w":"","pron":"","ko":""}],"options":[{"t":"","ko":""}]}',
@@ -320,37 +329,55 @@ function clean(o){
     words:(Array.isArray(o.words)?o.words:[]).filter(function(x){return x&&x.w}).slice(0,20).map(function(x){return {w:String(x.w),pron:String(x.pron||""),ko:String(x.ko||"")}}),
     options:(Array.isArray(o.options)?o.options:[]).filter(function(x){return x&&x.t}).slice(0,3).map(function(x){return {t:String(x.t),ko:String(x.ko||"")}})};
 }
-async function askClaude(){
-  var o=await sample.json([{role:"user",content:rules()}].concat(turns()),{cache:false,modelTier:"quick"});
-  return clean(o);
-}
-async function askGemini(){
-  var url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(cfg.model||DEF.model)+":generateContent";
-  var body={systemInstruction:{parts:[{text:rules()}]},
-    contents:turns().map(function(t){return {role:t.role==="user"?"user":"model",parts:[{text:t.content}]}}),
-    generationConfig:{responseMimeType:"application/json"}};
-  var res;
-  var ctl=new AbortController(), tm=setTimeout(function(){ctl.abort()},30000);
-  try{res=await fetch(url,{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json","x-goog-api-key":cfg.key},body:JSON.stringify(body)})}
+function pj(txt){var a=txt.indexOf("{"),b=txt.lastIndexOf("}");try{return JSON.parse(txt.slice(a,b+1))}catch(e){throw {code:"invalid_json"}}}
+async function post(url,headers,body){
+  var res, ctl=new AbortController(), tm=setTimeout(function(){ctl.abort()},30000);
+  try{res=await fetch(url,{method:"POST",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},headers),body:JSON.stringify(body)})}
   catch(e){throw {code:ctl.signal.aborted?"slow":"network"}}
   finally{clearTimeout(tm)}
   if(!res.ok)throw {code:"http",status:res.status};
-  var j=await res.json(), txt="";
-  try{txt=j.candidates[0].content.parts.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
-  var a=txt.indexOf("{"), b=txt.lastIndexOf("}");
-  try{return clean(JSON.parse(txt.slice(a,b+1)))}catch(e){throw {code:"invalid_json"}}
+  return await res.json();
 }
-async function askAnthropic(){
-  var res;
-  try{res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:rules(),messages:turns()})})}
-  catch(e){throw {code:"network"}}
-  if(!res.ok)throw {code:"http",status:res.status};
-  var j=await res.json(), txt="";
-  try{txt=j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
-  var a=txt.indexOf("{"), b=txt.lastIndexOf("}");
-  try{return clean(JSON.parse(txt.slice(a,b+1)))}catch(e){throw {code:"invalid_json"}}
+async function askClaude(sys,msgs){
+  return await sample.json([{role:"user",content:sys}].concat(msgs),{cache:false,modelTier:"quick"});
+}
+async function askGemini(sys,msgs){
+  var j=await post("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(cfg.model||DEF.model)+":generateContent",{"x-goog-api-key":cfg.key},
+    {systemInstruction:{parts:[{text:sys}]},
+     contents:msgs.map(function(t){return {role:t.role==="user"?"user":"model",parts:[{text:t.content}]}}),
+     generationConfig:{responseMimeType:"application/json"}});
+  var txt=""; try{txt=j.candidates[0].content.parts.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
+  return pj(txt);
+}
+async function askAnthropic(sys,msgs){
+  var j=await post("https://api.anthropic.com/v1/messages",{"x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs});
+  var txt=""; try{txt=j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
+  return pj(txt);
+}
+function ai(sys,msgs){
+  if(sample)return askClaude(sys,msgs);
+  if(cfg.ckey&&(cfg.provider==="claude"||!cfg.key))return askAnthropic(sys,msgs);
+  if(cfg.key)return askGemini(sys,msgs);
+  return Promise.reject({code:"nokey"});
+}
+/* ---------- 단어 눌러서 뜻 · 발음 듣기 ---------- */
+var dict=load("mb_dict",{});
+function sayWord(w,ko){speak(w,function(){if(ko)speak(ko,null,"","ko-KR",1)})}
+function showLook(look,w,d){look.textContent="";look.appendChild(el("b",null,w));look.appendChild(el("i",null,d.pron||""));look.appendChild(el("em",null,d.ko||""));look.hidden=false}
+async function lookup(tok,m,look,sp){
+  var w=tok.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,""); if(!w)return;
+  var prev=look.parentNode.querySelector(".tw.on"); if(prev)prev.classList.remove("on"); sp.classList.add("on");
+  var k=cfg.lang+"|"+w.toLowerCase();
+  var d=(m.words||[]).filter(function(x){return x.w.toLowerCase()===w.toLowerCase()})[0]||dict[k];
+  if(d){showLook(look,w,d);sayWord(w,d.ko);return}
+  showLook(look,w,{pron:"",ko:"찾는 중…"}); speak(w,null);
+  try{
+    var o=await ai("너는 "+(LANGS[cfg.lang]||cfg.lang)+" 사전이야. 문장 속 단어 하나의 한글 발음 표기와, 이 문장에서의 한국어 뜻을 짧게 알려 줘. 반드시 JSON 하나만: {\"pron\":\"한글 발음\",\"ko\":\"뜻\"}",
+      [{role:"user",content:"문장: "+m.say+"\n단어: "+w}]);
+    d={pron:String(o&&o.pron||""),ko:String(o&&o.ko||"")}; dict[k]=d; save("mb_dict",dict);
+    if(sp.classList.contains("on")){showLook(look,w,d); if(d.ko)speak(d.ko,null,"","ko-KR",1);}
+  }catch(e){ if(sp.classList.contains("on"))showLook(look,w,{pron:"",ko:errCopy(e)}) }
 }
 function errCopy(e){
   var c=e&&e.code;
@@ -372,11 +399,7 @@ async function send(text){
   var me={r:"me",t:text}; hist.push(me); bubble(me); save("mb_hist",hist);
   setStatus("생각하는 중…");
   try{
-    var m;
-    if(sample)m=await askClaude();
-    else if(cfg.ckey&&(cfg.provider==="claude"||!cfg.key))m=await askAnthropic();
-    else if(cfg.key)m=await askGemini();
-    else throw {code:"nokey"};
+    var m=clean(await ai(rules(),turns()));
     hist.push(m); if(hist.length>200)hist=hist.slice(-200); save("mb_hist",hist);
     var b=bubble(m,cfg.audioFirst&&("speechSynthesis" in window));
     setStatus("듣고 따라 해 보세요");
