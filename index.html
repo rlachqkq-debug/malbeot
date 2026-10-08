@@ -114,7 +114,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
   </div>
 
   <div class="lv">
-    <span id="lvOut">난이도 1 / 10</span>
+    <span id="lvOut">난이도 2 / 10</span>
     <button type="button" id="lvDown">쉽게</button>
     <button type="button" id="lvUp">어렵게</button>
   </div>
@@ -210,7 +210,7 @@ var HELLO={
  "zh-CN":["你好!很高兴见到你。今天我们聊什么?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "es-ES":["¡Hola! Me alegro de verte. ¿De qué hablamos hoy?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "fr-FR":["Salut ! Content de te voir. De quoi on parle aujourd'hui ?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"]};
-var DEF={who:"adult",age:"",lang:"de-DE",level:"왕초보",lv:1,streak:0,miss:0,likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
+var DEF={who:"adult",age:"",lang:"de-DE",level:"왕초보",lv:2,streak:0,miss:0,likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
   rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, 명사 대문자, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-4-5-20251001"};
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
@@ -297,16 +297,17 @@ var LV=["",
  "두세 문장. 업무 어휘를 자유롭게. 정중한 표현과 편한 표현을 구분.",
  "두세 문장. 관용 표현과 자연스러운 구어 문장.",
  "제한 없음. 원어민 동료에게 말하듯."];
-function lvNow(){return Math.min(10,Math.max(1,Number(cfg.lv)||1))}
+var LVMIN=2;
+function lvNow(){return Math.min(10,Math.max(LVMIN,Number(cfg.lv)||LVMIN))}
 function showLv(){var e=$("lvOut"); if(e)e.textContent="난이도 "+lvNow()+" / 10"}
-function setLv(n,why){var o=lvNow(); cfg.lv=Math.min(10,Math.max(1,n)); cfg.streak=0; cfg.miss=0; save("mb_cfg",cfg); showLv(); if(cfg.lv!==o&&why)note(why+" (난이도 "+cfg.lv+" / 10)")}
+function setLv(n,why){var o=lvNow(); cfg.lv=Math.min(10,Math.max(LVMIN,n)); cfg.streak=0; cfg.miss=0; save("mb_cfg",cfg); showLv(); if(cfg.lv!==o&&why)note(why+" (난이도 "+cfg.lv+" / 10)")}
 function rules(){
   var L=LANGS[cfg.lang]||cfg.lang;
   return [
    "너는 '"+(cfg.friend||"친구")+"'라는 이름의 말하기 연습 상대야. 한국어를 쓰는 사람이 "+L+" 말하기를 연습하도록 돕는다.",
    "[내 사용설명서]",
    "- 쓰는 사람: "+(cfg.who==="child"?"아이":"성인")+(cfg.age?" / 나이 "+cfg.age+"세":""),
-   "- 배울 언어: "+L+" ("+cfg.lang+") / 지금 난이도: "+lvNow()+"/10 (1이 가장 쉬움)",
+   "- 배울 언어: "+L+" ("+cfg.lang+") / 지금 난이도: "+lvNow()+"/10 (2가 가장 쉬움)",
    "- 좋아하는 것·이야기하고 싶은 것: "+(cfg.likes||"자유"),
    "- 한 번 대화 시간: 약 "+cfg.minutes+"분",
    "- 따라 말하기 양: "+cfg.repeat+" (없음=repeat 항상 빈칸, 조금=서너 번에 한 번, 많이=거의 매번)",
@@ -317,7 +318,7 @@ function rules(){
    "- 상대가 "+L+"로 틀리게 말하면 고친 문장을 자연스럽게 다시 말해 주고 repeat에 넣어. 꾸짖지 마.",
    (cfg.who==="child"?"- 아이에게 맞는 밝고 안전한 내용만 말해. 한국어는 쉬운 반말로.":
     "- 말투와 성격: 담백하고 편한 친구. 한국어(ko, fix, 뜻)는 전부 반말로, 짧게, 결론부터 말해. 존댓말(~요, ~습니다) 쓰지 마. 호들갑, 과한 칭찬, 감탄사 남발, 이모지 금지. 잘한 건 한마디로만 인정하고 넘어가. 틀린 건 돌려 말하지 말고 바로 짚되 깎아내리지는 마. 모르는 건 아는 척하지 마. 가끔 가벼운 농담은 괜찮아. "+L+"는 친구 사이 말투(예: 독일어면 du)로 자연스럽게."),
-   (cfg.who!=="child"&&cfg.slang&&lvNow()>=4?"- 슬랭·욕설: 원어민이 동료나 친구끼리 실제로 쓰는 구어체 슬랭과 욕설을 가끔(서너 번에 한 번쯤) 자연스럽게 섞어. 매번 넣지는 마. 쓸 때는 words의 ko에 '(속어)', '(욕, 친한 사이에서만)', '(상사·고객 앞에선 금지)'처럼 수위와 써도 되는 자리를 꼭 적어. 특정 집단을 비하하는 혐오 표현은 쓰지 마.":"- 슬랭이나 욕설은 쓰지 마."),
+   (cfg.who!=="child"&&cfg.slang&&lvNow()>=2?"- 슬랭·욕설: 원어민이 동료나 친구끼리 실제로 쓰는 구어체 슬랭과 욕설을 가끔(서너 번에 한 번쯤) 자연스럽게 섞어. 매번 넣지는 마. 쓸 때는 words의 ko에 '(속어)', '(욕, 친한 사이에서만)', '(상사·고객 앞에선 금지)'처럼 수위와 써도 되는 자리를 꼭 적어. 특정 집단을 비하하는 혐오 표현은 쓰지 마.":"- 슬랭이나 욕설은 쓰지 마."),
    "- 네가 상황극(롤플레이) 장면을 직접 골라서 시작하고 이끌어. 상대에게 장면을 고르라고 하지 마. 좋아하는 것·이야기하고 싶은 것에 맞는 장면으로, 같은 장면만 되풀이하지 마.",
    "- 상대가 자주 틀리는 것: "+(cfg.weak||"없음")+". 이런 실수가 나오면 fix에 한국어 한 줄로 짧고 직접적으로 짚어 줘. 틀린 게 없으면 fix는 빈칸.",
    "- words: say에 나온 모든 단어를 빠짐없이 순서대로 하나씩 풀이해(한두 개만 넣지 마). w=단어, pron=한글 발음 표기, ko=뜻.",
@@ -463,7 +464,7 @@ async function send(text,viaOption){
   try{
     var m=clean(await ai(rules(),turns())); prefetch(m);
     if(!viaOption&&!/[가-힣]/.test(text)){
-      if(m.fix){cfg.streak=0;cfg.miss=(cfg.miss||0)+1; if(cfg.miss>=3&&lvNow()>1){setTimeout(function(){setLv(lvNow()-1,"세 번 연속 걸려서 한 단계 내렸어.")},0)} else save("mb_cfg",cfg)}
+      if(m.fix){cfg.streak=0;cfg.miss=(cfg.miss||0)+1; if(cfg.miss>=3&&lvNow()>LVMIN){setTimeout(function(){setLv(lvNow()-1,"세 번 연속 걸려서 한 단계 내렸어.")},0)} else save("mb_cfg",cfg)}
       else{cfg.miss=0;cfg.streak=(cfg.streak||0)+1; if(cfg.streak>=5&&lvNow()<10){setTimeout(function(){setLv(lvNow()+1,"다섯 번 연속 맞아서 한 단계 올렸어.")},0)} else save("mb_cfg",cfg)}
     }
     hist.push(m); if(hist.length>200)hist=hist.slice(-200); save("mb_hist",hist);
@@ -546,7 +547,7 @@ $("setForm").addEventListener("submit",function(e){
   cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.voice=$("s_voice").value; if(cfg.key&&!cfg.ckey)cfg.provider="gemini"; if(cfg.ckey&&!cfg.key)cfg.provider="claude"; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked; cfg.slang=$("s_slang").checked;
   cfg.showKo=$("s_showKo").checked; cfg.audioFirst=$("s_audioFirst").checked;
   save("mb_cfg",cfg);
-  if(oldLevel!==cfg.level){cfg.lv={"왕초보":1,"초급":2,"중급":5,"고급":8}[cfg.level]||1;cfg.streak=0;cfg.miss=0;save("mb_cfg",cfg)} showLv();
+  if(oldLevel!==cfg.level){cfg.lv={"왕초보":2,"초급":3,"중급":5,"고급":8}[cfg.level]||LVMIN;cfg.streak=0;cfg.miss=0;save("mb_cfg",cfg)} showLv();
   if(oldLang!==cfg.lang&&hist.length<=1)hist=[];
   applyCfg(); renderAll(); $("sheet").hidden=true;
 });
@@ -556,7 +557,7 @@ $("wipe").onclick=function(){
   hist=[]; save("mb_hist",hist); wipeArmed=false; this.textContent="지웠어요"; renderAll();
 };
 
-$("lvDown").onclick=function(){if(lvNow()<=1){note("이미 가장 쉬운 단계야.");return} setLv(lvNow()-1,"다음 답부터 더 쉽게 갈게.")};
+$("lvDown").onclick=function(){if(lvNow()<=LVMIN){note("이미 가장 쉬운 단계야.");return} setLv(lvNow()-1,"다음 답부터 더 쉽게 갈게.")};
 $("lvUp").onclick=function(){if(lvNow()>=10){note("이미 가장 어려운 단계야.");return} setLv(lvNow()+1,"다음 답부터 조금 어렵게 갈게.")};
 showLv();
 /* ---------- 시작 ---------- */
