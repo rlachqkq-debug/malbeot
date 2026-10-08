@@ -52,6 +52,9 @@ button{cursor:pointer}
 .pop b{font-size:17px}.pop i{font-style:normal;opacity:.85}.pop em{font-style:normal}
 .pop button{margin-top:6px;align-self:flex-start;border:0;border-radius:999px;padding:5px 14px;background:var(--accent);color:var(--accent-fg);font-size:13px}
 .wd{cursor:pointer}
+.ans{font-size:14px;line-height:1.5;background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:10px;padding:8px 10px}
+.pop{max-width:min(300px,calc(100vw - 16px))}
+.pop p{margin:4px 0 0;font-size:13px;line-height:1.45}
 .fix{font-size:13px;color:var(--hot);font-weight:600}
 .words{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .wd{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:12px;line-height:1.3}
@@ -225,6 +228,7 @@ function bubble(m,veil){
     b.appendChild(wordify(el("p","say"),m.say,m,b));
     var ko=el("p","ko",m.ko); ko.hidden=!cfg.showKo||!m.ko; b.appendChild(ko);
     if(m.repeat){var r=el("div","rep");r.appendChild(el("small",null,"따라 말해요"));r.appendChild(wordify(el("span"),m.repeat,m,b));b.appendChild(r);}
+    if(m.note)b.insertBefore(el("p","ans",m.note),b.firstChild);
     if(m.fix)b.insertBefore(el("p","fix",m.fix),b.firstChild);
     if(cfg.showWords&&m.words&&m.words.length){var w=el("div","words x");
       m.words.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));c.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();speak(x.w,null)};w.appendChild(c)});b.appendChild(w);}
@@ -285,7 +289,8 @@ function rules(){
    "- 따라 말하기 양: "+cfg.repeat+" (없음=repeat 항상 빈칸, 조금=서너 번에 한 번, 많이=거의 매번)",
    "[대화 규칙]",
    "- 수준에 맞는 짧은 문장 1~2개로 말하고, 끝에 쉬운 질문 하나를 붙여 대화를 이어 가.",
-   "- 상대가 한국어로 말하면 그 말을 "+L+"로 어떻게 하는지 알려 주고 repeat에 넣어.",
+   "- 상대가 한국어로 말하면 그 말을 "+L+"로 어떻게 하는지 알려 주고 repeat에 넣어. (질문일 때는 아래 질문 규칙을 따라.)",
+   "- 질문 규칙: 상대가 단어·문법·표현에 대해 물으면(한국어든 "+L+"든) note에 한국어로 2~4문장으로 답해. 기본형이 뭔지, 왜 그 형태가 됐는지(격·성·수·시제 등), 짧은 예문 하나. 그다음 say로 하던 장면을 자연스럽게 이어 가. 질문이 아니면 note는 빈칸.",
    "- 상대가 "+L+"로 틀리게 말하면 고친 문장을 자연스럽게 다시 말해 주고 repeat에 넣어. 꾸짖지 마.",
    (cfg.who==="child"?"- 아이에게 맞는 밝고 안전한 내용만 말해. 한국어는 쉬운 반말로.":
     "- 말투와 성격: 담백하고 편한 친구. 한국어(ko, fix, 뜻)는 전부 반말로, 짧게, 결론부터 말해. 존댓말(~요, ~습니다) 쓰지 마. 호들갑, 과한 칭찬, 감탄사 남발, 이모지 금지. 잘한 건 한마디로만 인정하고 넘어가. 틀린 건 돌려 말하지 말고 바로 짚되 깎아내리지는 마. 모르는 건 아는 척하지 마. 가끔 가벼운 농담은 괜찮아. "+L+"는 친구 사이 말투(예: 독일어면 du)로 자연스럽게."),
@@ -295,19 +300,19 @@ function rules(){
    "- words: say에 나온 모든 단어를 빠짐없이 순서대로 하나씩 풀이해(한두 개만 넣지 마). w=단어, pron=한글 발음 표기, ko=뜻.",
    "- options: 상대가 다음에 할 수 있는 알맞은 답 예시 2~3개. t="+L+" 문장, ko=한국어 뜻. 수준에 맞게 짧게.",
    "[답 형식]",
-   '반드시 JSON 하나만: {"say":"'+L+' 문장","ko":"한국어 뜻","repeat":"따라 말할 짧은 문장, 없으면 빈칸","fix":"","words":[{"w":"","pron":"","ko":""}],"options":[{"t":"","ko":""}]}',
-   "say, repeat, words의 w, options의 t는 "+L+"로만. ko, pron, fix는 한국어로만. JSON 밖에는 아무것도 쓰지 마."
+   '반드시 JSON 하나만: {"say":"'+L+' 문장","ko":"한국어 뜻","repeat":"따라 말할 짧은 문장, 없으면 빈칸","fix":"","note":"","words":[{"w":"","pron":"","ko":""}],"options":[{"t":"","ko":""}]}',
+   "say, repeat, words의 w, options의 t는 "+L+"로만. ko, pron, fix, note는 한국어로만. JSON 밖에는 아무것도 쓰지 마."
   ].join("\n");
 }
 function turns(){
   var out=[], h=hist.slice(-24);
-  h.forEach(function(m){ out.push(m.r==="me"?{role:"user",content:m.t}:{role:"assistant",content:JSON.stringify({say:m.say,ko:m.ko,repeat:m.repeat||"",fix:m.fix||"",words:m.words||[],options:m.options||[]})}) });
+  h.forEach(function(m){ out.push(m.r==="me"?{role:"user",content:m.t}:{role:"assistant",content:JSON.stringify({say:m.say,ko:m.ko,repeat:m.repeat||"",fix:m.fix||"",note:m.note||"",words:m.words||[],options:m.options||[]})}) });
   while(out.length&&out[0].role!=="user")out.shift();
   return out;
 }
 function clean(o){
   if(!o||typeof o!=="object"||!o.say)throw {code:"invalid_json"};
-  return {r:"ai",say:String(o.say),ko:String(o.ko||""),repeat:cfg.repeat==="없음"?"":String(o.repeat||""),fix:String(o.fix||""),
+  return {r:"ai",say:String(o.say),ko:String(o.ko||""),repeat:cfg.repeat==="없음"?"":String(o.repeat||""),fix:String(o.fix||""),note:String(o.note||""),
     words:(Array.isArray(o.words)?o.words:[]).filter(function(x){return x&&x.w}).slice(0,20).map(function(x){return {w:String(x.w),pron:String(x.pron||""),ko:String(x.ko||"")}}),
     options:(Array.isArray(o.options)?o.options:[]).filter(function(x){return x&&x.t}).slice(0,3).map(function(x){return {t:String(x.t),ko:String(x.ko||"")}})};
 }
@@ -344,15 +349,27 @@ function ai(sys,msgs){
   return Promise.reject({code:"nokey"});
 }
 /* ---------- 단어를 누르면 뜻 · 발음 말풍선 ---------- */
-var dict=load("mb_dict",{}), pop=null, popOn=null, popWord="";
+var dict=load("mb_dict",{}), pop=null, popOn=null, popWord="", popCtx="", popKey="";
 function hidePop(){if(pop)pop.hidden=true;if(popOn){popOn.classList.remove("on");popOn=null}}
 function showPop(sp,w,d){
   if(!pop){pop=el("div","pop");pop.appendChild(el("b"));pop.appendChild(el("i"));pop.appendChild(el("em"));
     var pb=el("button",null,"발음 듣기");pb.type="button";pb.onclick=function(e){e.stopPropagation();speak(popWord,null)};pop.appendChild(pb);
+    var mb=el("button",null,"자세히");mb.type="button";var mp=el("p");mp.hidden=true;pop.appendChild(mb);pop.appendChild(mp);
+    mb.onclick=async function(e){e.stopPropagation();
+      var w=popWord,k="more|"+popKey,sp=popOn,ctx=popCtx;
+      if(!dict[k]){mp.textContent="찾는 중…";mp.hidden=false;placePop();
+        try{var o=await ai("너는 "+(LANGS[cfg.lang]||cfg.lang)+" 선생이야. 문장 속 단어 하나를 한국어 반말로 2~4문장으로 설명해. 기본형(사전에 실린 꼴)이 뭔지, 이 문장에서 왜 이 형태가 됐는지(격·성·수·시제 등), 짧은 예문 하나와 그 뜻. 반드시 JSON 하나만: {\"more\":\"설명\"}",
+            [{role:"user",content:"문장: "+ctx+"\n단어: "+w}]);
+          dict[k]=String(o&&o.more||"설명을 받지 못했어."); save("mb_dict",dict);
+        }catch(err){ if(popOn===sp){mp.textContent=errCopy(err);placePop()} return }}
+      if(popOn===sp){mp.textContent=dict[k];mp.hidden=false;placePop()}};
     document.body.appendChild(pop);}
   if(popOn&&popOn!==sp)popOn.classList.remove("on"); popOn=sp; sp.classList.add("on"); popWord=w;
   pop.children[0].textContent=w; pop.children[1].textContent=d.pron||""; pop.children[1].hidden=!d.pron; pop.children[2].textContent=d.ko||"";
-  pop.hidden=false;
+  pop.children[5].hidden=true; pop.hidden=false; placePop();
+}
+function placePop(){
+  if(!pop||!popOn)return; var sp=popOn;
   var r=sp.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight;
   var x=Math.min(Math.max(8,r.left+r.width/2-pw/2),window.innerWidth-pw-8), y=r.top-ph-8; if(y<8)y=r.bottom+8;
   pop.style.left=x+"px"; pop.style.top=y+"px";
@@ -362,7 +379,7 @@ chat.addEventListener("scroll",hidePop);
 async function lookup(tok,m,sp,sentence){
   var w=tok.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,""); if(!w)return;
   if(popOn===sp&&pop&&!pop.hidden){hidePop();return}
-  var k=cfg.lang+"|"+w.toLowerCase();
+  var k=cfg.lang+"|"+w.toLowerCase(); popCtx=sentence; popKey=k;
   var d=(m.words||[]).filter(function(x){return x.w.toLowerCase()===w.toLowerCase()})[0]||dict[k];
   if(d){showPop(sp,w,d);return}
   showPop(sp,w,{pron:"",ko:"찾는 중…"});
