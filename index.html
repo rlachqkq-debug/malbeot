@@ -371,8 +371,8 @@ async function send(text){
   try{
     var m;
     if(sample)m=await askClaude();
-    else if(cfg.provider==="claude"&&cfg.ckey)m=await askAnthropic();
-    else if(cfg.provider!=="claude"&&cfg.key)m=await askGemini();
+    else if(cfg.ckey&&(cfg.provider==="claude"||!cfg.key))m=await askAnthropic();
+    else if(cfg.key)m=await askGemini();
     else throw {code:"nokey"};
     hist.push(m); if(hist.length>200)hist=hist.slice(-200); save("mb_hist",hist);
     var b=bubble(m,cfg.audioFirst&&("speechSynthesis" in window));
@@ -451,7 +451,7 @@ $("setForm").addEventListener("submit",function(e){
   var oldLang=cfg.lang;
   F.forEach(function(k){cfg[k]=$("s_"+k).value});
   cfg.rate=Math.min(1.2,Math.max(0.6,Number(cfg.rate)||0.88)); cfg.limit=Math.max(0,Number(cfg.limit)||0); cfg.minutes=Math.max(1,Number(cfg.minutes)||10);
-  cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.voice=$("s_voice").value; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked;
+  cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.voice=$("s_voice").value; if(cfg.key&&!cfg.ckey)cfg.provider="gemini"; if(cfg.ckey&&!cfg.key)cfg.provider="claude"; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked;
   cfg.showKo=$("s_showKo").checked; cfg.audioFirst=$("s_audioFirst").checked;
   save("mb_cfg",cfg);
   if(oldLang!==cfg.lang&&hist.length<=1)hist=[];
