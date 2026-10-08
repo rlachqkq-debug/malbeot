@@ -58,8 +58,9 @@ button{cursor:pointer}
 .rep small{color:var(--accent);font-weight:600}
 .tw{cursor:pointer;border-bottom:2px dotted var(--line)}
 .tw.on{background:color-mix(in srgb,var(--accent) 22%,transparent);border-radius:4px}
-.look{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;border:1px solid var(--accent);border-radius:10px;padding:6px 10px;font-size:15px}
-.look i{font-style:normal;color:var(--accent)}.look em{font-style:normal;color:var(--muted)}
+.pop{position:fixed;z-index:4;max-width:min(280px,calc(100vw - 16px));background:var(--me-bg);color:var(--me-fg);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+.pop b{font-size:17px}.pop i{font-style:normal;opacity:.85}.pop em{font-style:normal}
+.pop button{margin-top:6px;align-self:flex-start;border:0;border-radius:999px;padding:5px 14px;background:var(--accent);color:var(--accent-fg);font-size:13px}
 .wd{cursor:pointer}
 .fix{font-size:13px;color:var(--hot);font-weight:600}
 .words{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
@@ -238,22 +239,18 @@ function bubble(m,veil){
   if(m.r==="me"){b=el("div","b me");b.appendChild(el("p",null,m.t));}
   else{
     b=el("div","b ai"+(veil?" veil":""));
-    var sayP=el("p","say"); sayP.lang=cfg.lang; var look=el("div","look"); look.hidden=true;
-    m.say.split(/(\s+)/).forEach(function(tok){
-      if(!tok.trim()){sayP.appendChild(document.createTextNode(tok));return}
-      var sp=el("span","tw",tok); sp.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();lookup(tok,m,look,sp)}; sayP.appendChild(sp)});
-    b.appendChild(sayP); b.appendChild(look);
+    b.appendChild(wordify(el("p","say"),m.say,m,b));
     var ko=el("p","ko",m.ko); ko.hidden=!cfg.showKo||!m.ko; b.appendChild(ko);
-    if(m.repeat){var r=el("div","rep");r.appendChild(el("small",null,"따라 말해요"));var sp=el("span",null,m.repeat);sp.lang=cfg.lang;r.appendChild(sp);b.appendChild(r);}
+    if(m.repeat){var r=el("div","rep");r.appendChild(el("small",null,"따라 말해요"));r.appendChild(wordify(el("span"),m.repeat,m,b));b.appendChild(r);}
     if(m.fix)b.insertBefore(el("p","fix",m.fix),b.firstChild);
     if(cfg.showWords&&m.words&&m.words.length){var w=el("div","words x");
-      m.words.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));c.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();sayWord(x.w,x.ko)};w.appendChild(c)});b.appendChild(w);}
+      m.words.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));c.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();speak(x.w,null)};w.appendChild(c)});b.appendChild(w);}
     var a=el("div","acts");
     var again=el("button",null,"다시 듣기");again.type="button";again.onclick=function(e){e.stopPropagation();speak(m.say,null)};a.appendChild(again);
     if(m.repeat){var rp=el("button",null,"따라 할 문장 듣기");rp.type="button";rp.onclick=function(e){e.stopPropagation();speak(m.repeat,null)};a.appendChild(rp);}
     b.appendChild(a);
     if(cfg.showOpts&&m.options&&m.options.length){var o=el("div","opts x");o.appendChild(el("small",null,"이렇게 답해 봐"));
-      m.options.forEach(function(x){var row=el("div","opt"),tx=el("div","optt");tx.appendChild(el("b",null,x.t));tx.appendChild(el("em",null,x.ko));row.appendChild(tx);
+      m.options.forEach(function(x){var row=el("div","opt"),tx=el("div","optt");tx.appendChild(wordify(el("b"),x.t,m,b));tx.appendChild(el("em",null,x.ko));row.appendChild(tx);
         var h=el("button",null,"듣기");h.type="button";h.onclick=function(e){e.stopPropagation();speak(x.t,null)};
         var sd=el("button",null,"이걸로 답하기");sd.type="button";sd.onclick=function(e){e.stopPropagation();send(x.t)};
         row.appendChild(h);row.appendChild(sd);o.appendChild(row)});b.appendChild(o);}
@@ -361,23 +358,42 @@ function ai(sys,msgs){
   if(cfg.key)return askGemini(sys,msgs);
   return Promise.reject({code:"nokey"});
 }
-/* ---------- 단어 눌러서 뜻 · 발음 듣기 ---------- */
-var dict=load("mb_dict",{});
-function sayWord(w,ko){speak(w,function(){if(ko)speak(ko,null,"","ko-KR",1)})}
-function showLook(look,w,d){look.textContent="";look.appendChild(el("b",null,w));look.appendChild(el("i",null,d.pron||""));look.appendChild(el("em",null,d.ko||""));look.hidden=false}
-async function lookup(tok,m,look,sp){
+/* ---------- 단어를 누르면 뜻 · 발음 말풍선 ---------- */
+var dict=load("mb_dict",{}), pop=null, popOn=null, popWord="";
+function hidePop(){if(pop)pop.hidden=true;if(popOn){popOn.classList.remove("on");popOn=null}}
+function showPop(sp,w,d){
+  if(!pop){pop=el("div","pop");pop.appendChild(el("b"));pop.appendChild(el("i"));pop.appendChild(el("em"));
+    var pb=el("button",null,"발음 듣기");pb.type="button";pb.onclick=function(e){e.stopPropagation();speak(popWord,null)};pop.appendChild(pb);
+    document.body.appendChild(pop);}
+  if(popOn&&popOn!==sp)popOn.classList.remove("on"); popOn=sp; sp.classList.add("on"); popWord=w;
+  pop.children[0].textContent=w; pop.children[1].textContent=d.pron||""; pop.children[1].hidden=!d.pron; pop.children[2].textContent=d.ko||"";
+  pop.hidden=false;
+  var r=sp.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight;
+  var x=Math.min(Math.max(8,r.left+r.width/2-pw/2),window.innerWidth-pw-8), y=r.top-ph-8; if(y<8)y=r.bottom+8;
+  pop.style.left=x+"px"; pop.style.top=y+"px";
+}
+document.addEventListener("click",function(e){ if(pop&&!pop.hidden&&!pop.contains(e.target)&&!(e.target.classList&&e.target.classList.contains("tw")))hidePop() });
+chat.addEventListener("scroll",hidePop);
+async function lookup(tok,m,sp,sentence){
   var w=tok.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,""); if(!w)return;
-  var prev=look.parentNode.querySelector(".tw.on"); if(prev)prev.classList.remove("on"); sp.classList.add("on");
+  if(popOn===sp&&pop&&!pop.hidden){hidePop();return}
   var k=cfg.lang+"|"+w.toLowerCase();
   var d=(m.words||[]).filter(function(x){return x.w.toLowerCase()===w.toLowerCase()})[0]||dict[k];
-  if(d){showLook(look,w,d);sayWord(w,d.ko);return}
-  showLook(look,w,{pron:"",ko:"찾는 중…"}); speak(w,null);
+  if(d){showPop(sp,w,d);return}
+  showPop(sp,w,{pron:"",ko:"찾는 중…"});
   try{
     var o=await ai("너는 "+(LANGS[cfg.lang]||cfg.lang)+" 사전이야. 문장 속 단어 하나의 한글 발음 표기와, 이 문장에서의 한국어 뜻을 짧게 알려 줘. 반드시 JSON 하나만: {\"pron\":\"한글 발음\",\"ko\":\"뜻\"}",
-      [{role:"user",content:"문장: "+m.say+"\n단어: "+w}]);
+      [{role:"user",content:"문장: "+sentence+"\n단어: "+w}]);
     d={pron:String(o&&o.pron||""),ko:String(o&&o.ko||"")}; dict[k]=d; save("mb_dict",dict);
-    if(sp.classList.contains("on")){showLook(look,w,d); if(d.ko)speak(d.ko,null,"","ko-KR",1);}
-  }catch(e){ if(sp.classList.contains("on"))showLook(look,w,{pron:"",ko:errCopy(e)}) }
+    if(popOn===sp)showPop(sp,w,d);
+  }catch(e){ if(popOn===sp)showPop(sp,w,{pron:"",ko:errCopy(e)}) }
+}
+function wordify(node,text,m,b){
+  node.lang=cfg.lang;
+  text.split(/(\s+)/).forEach(function(tok){
+    if(!tok.trim()){node.appendChild(document.createTextNode(tok));return}
+    var sp=el("span","tw",tok); sp.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();lookup(tok,m,sp,text)}; node.appendChild(sp)});
+  return node;
 }
 function errCopy(e){
   var c=e&&e.code;
