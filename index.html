@@ -298,19 +298,23 @@ var LV=["",
  "두세 문장. 업무 어휘를 자유롭게. 정중한 표현과 편한 표현을 구분.",
  "두세 문장. 관용 표현과 자연스러운 구어 문장.",
  "제한 없음. 원어민 동료에게 말하듯."];
-var LVMIN=2, LVSENT=[0,1,1,2,2,2,2,2,3,3,4];
+var LVMIN=2, LVSENT=[0,1,1,2,2,2,2,2,3,3,4], LVW=[0,7,7,8,9,10,11,13,15,18,99];
+var SCENES_EASY=["아침에 동료와 인사","커피 머신 앞에서","점심 뭐 먹을지","오늘 날씨","퇴근 전 인사","주말에 뭐 했는지","피곤한 월요일","사무실 자리에서 간식"];
+var SCENES_WORK=["프린터로 도면 출력 부탁","회의 시간 잡기","현장 가기 전 안전모 챙기기","자재 배달이 늦음","고객 미팅 준비","도면 수정 요청","현장에서 치수 재기","마감이 급한 날"];
+function pickScene(lv){var a=lv<=3?SCENES_EASY.concat(SCENES_WORK.slice(0,3)):SCENES_EASY.slice(0,4).concat(SCENES_WORK);return a[Math.floor(Math.random()*a.length)]}
+
 function lvNow(){return Math.min(10,Math.max(LVMIN,Number(cfg.lv)||LVMIN))}
 function showLv(){var e=$("lvOut"); if(e)e.textContent="난이도 "+lvNow()+" / 10"}
 function setLv(n,why){var o=lvNow(); cfg.lv=Math.min(10,Math.max(LVMIN,n)); cfg.streak=0; cfg.miss=0; save("mb_cfg",cfg); showLv(); if(cfg.lv!==o&&why)note(why+" (난이도 "+cfg.lv+" / 10)")}
 function rules(){
   var L=LANGS[cfg.lang]||cfg.lang, lv=lvNow(), n=LVSENT[lv], kid=cfg.who==="child";
-  var slang=!kid&&cfg.slang&&lv>=2, ut=hist.filter(function(x){return x.r==="me"}).length;
+  var slang=!kid&&cfg.slang&&lv>=2, ut=hist.filter(function(x){return x.r==="me"}).length, lastAi=hist.filter(function(x){return x.r==="ai"}).slice(-1)[0], lastSay=lastAi?lastAi.say:"";
   return [
    "너는 '"+(cfg.friend||"친구")+"'. 한국어를 쓰는 학습자와 "+L+"로 말을 주고받는 회화 상대야.",
    "",
    "[학습자]",
    "- "+(kid?"아이":"성인")+(cfg.age?", "+cfg.age+"세":"")+". 배우는 언어: "+L+" ("+cfg.lang+").",
-   (ut<=1?"- 관심사: "+(cfg.likes||"자유")+". 이걸 바탕으로 가벼운 상황 하나를 골라 대화를 열어."
+   (ut<=1?"- 관심사: "+(cfg.likes||"자유")+". 이번 대화는 이 상황으로 열어: "+pickScene(lv)+"."
     :ut%6===0?"- 관심사: "+(cfg.likes||"자유")+". 이번 턴에는 지금 화제에서 이 관심사 쪽으로 자연스럽게 다리를 놓아 화제를 넘겨도 돼."
     :"- 이번 턴에는 화제를 바꾸지 마. 학습자가 방금 한 말에 나온 것에 대해서만 반응하고 물어. 일, 현장, 공구 얘기를 네가 먼저 꺼내지 마."),
    "- 자주 틀리는 것: "+(cfg.weak||"없음")+".",
@@ -321,12 +325,14 @@ function rules(){
    "say의 구조: (짧은 반응 한마디, 단어 3개 이하, 없어도 됨) + 본문 최대 "+n+"문장. 본문의 마지막은 반드시 학습자에게 묻는 질문이야.",
    "이 범위를 넘는 문법, 긴 문장, 어려운 단어는 쓰지 마. options와 repeat도 같은 난이도야.",
    "",
+   (lastSay?"[네가 바로 앞에서 한 말]\n"+lastSay+"\n":""),
    "[매 턴 순서]",
    "1. 학습자의 마지막 말이 셋 중 무엇인지 먼저 정해.",
-   "   (가) 대화에 대한 답  (나) 질문: 단어 뜻, 문법, '~를 어떻게 말해?'  (다) 모르겠다, 다시 말해 달라",
+   "   (가) 대화에 대한 답  (나) 질문: 단어 뜻, 문법, '~를 어떻게 말해?'  (다) 모르겠다, 다시 말해 달라  (라) 대화에 대한 답인데 한국어로 말함",
    "2. (가)면: 학습자가 한 말의 내용을 받아서 한마디 반응하고, 같은 화제로 질문 하나를 해.",
-   "   (나)면: note에 한국어로 2~4문장 답해(무엇인지, 왜 그런지, 짧은 예문 하나). say에서는 설명하지 말고 하던 대화를 잇는 쉬운 질문 하나만 해. '어떻게 말해?'였다면 그 표현을 repeat에 넣어.",
-   "   (다)면: 바로 앞 질문을 더 쉬운 단어로 바꿔서 다시 물어. fix와 note는 빈칸.",
+   "   (나)면: note에 한국어로 2~4문장 답해(무엇인지, 왜 그런지, 짧은 예문 하나). 설명은 note에만 써. say에는 문법이나 단어 설명을 넣지 마. 학습자의 질문을 따라 말하지도 마. say는 짧은 한마디(예: Gute Frage!) 뒤에 [네가 바로 앞에서 한 말]에 있던 네 질문을 다시 묻는 거야. '어떻게 말해?'였다면 그 표현을 repeat에 넣어.",
+   "   (다)면: [네가 바로 앞에서 한 말]에 있던 네 질문을 같은 뜻으로, 더 쉬운 단어로 다시 물어. 주어를 바꾸지 마. 새 얘기를 덧붙이지 마. fix와 note는 빈칸.",
+   "   (라)면: 학습자가 하려던 말을 "+L+"로 옮긴 한 문장을 repeat에 넣어. say는 그 내용을 받아서 (가)처럼 이어 가. fix와 note는 빈칸.",
    "",
    "[say]",
    "- 학습자가 방금 한 말이 우선이야. 네가 꺼낸 장면이나 물건을 고집하지 마. 학습자가 커피 얘기를 하면 커피 얘기를 이어 가.",
@@ -339,8 +345,9 @@ function rules(){
    "",
    "[fix]",
    "- 학습자의 "+L+" 문장에 문법이나 단어 오류가 실제로 있을 때만 써. 형식: '고친 문장 전체 — 이유 한마디'. 예: 'Ich brauche einen Kaffee. — ich 뒤에는 brauche야.'",
-   "- 고친 문장은 학습자가 말하려던 문장 그대로 주어를 유지해(ich로 말했으면 ich로).",
+   "- 고친 문장은 학습자가 말하려던 문장 그대로야. 주어, 시제, 단어를 유지하고 틀린 부분만 바꿔(ich로 말했으면 ich로, 과거로 말했으면 과거로).",
    "- 맞는 문장이면 반드시 빈칸. 칭찬, 격려, 답이 짧다는 지적은 fix에 쓰지 마. ja, nein 같은 짧은 답은 틀린 게 아니야.",
+   "- 확실한 오류만 고쳐: 동사 변화, 격, 성, 어순, 틀린 단어. 관사를 뺀 것처럼 사소하거나 원어민도 그렇게 말하는 표현은 고치지 마. 문장 조각으로 짧게 답한 것도 틀린 게 아니야.",
    "- 대소문자와 문장부호는 채점하지 마. 학습자는 타자 칠 때 대소문자를 구분하지 않아.",
    "- 학습자가 한국어로 말한 턴은 fix 빈칸.",
    "",
@@ -493,11 +500,38 @@ function errCopy(e){
   if(c==="refused")return "이 말에는 답할 수 없대요. 다른 말로 해 볼까요?";
   return "답을 받지 못했어요. 한 번 더 말해 주세요.";
 }
+/* 난이도보다 길면 한 번만 다시 받는다 */
+function tooLong(say){
+  var lv=lvNow(), ss=String(say).trim().split(/(?<=[.!?])\s+/).filter(Boolean), wc=function(t){return (t.match(/[\p{L}\p{N}]+/gu)||[]).length};
+  if(ss.length>1&&wc(ss[0])<=3)ss=ss.slice(1);
+  ss=ss.map(function(c){var i=c.indexOf(","); return i>0&&wc(c.slice(0,i))<=3?c.slice(i+1):c});
+  var mx=Math.max.apply(null,ss.map(wc).concat([0]));
+  return (ss.length>LVSENT[lv]?ss.length-LVSENT[lv]:0)*100+Math.max(0,mx-LVW[lv]);
+}
+async function askTurn(){
+  var m=clean(await ai(rules(),turns())), over=tooLong(m.say);
+  if(!over)return m;
+  try{
+    var m2=clean(await ai(rules()+"\n\n[다시 쓰기] 네가 방금 낸 say는 '"+m.say+"'였는데 난이도 "+lvNow()+"에 비해 너무 길어. 같은 내용을 본문 "+LVSENT[lvNow()]+"문장, 문장당 단어 "+LVW[lvNow()]+"개 이하로 줄여서 같은 JSON 형식으로 다시 써. words, options, ko도 새 say에 맞춰.",turns()));
+    if(tooLong(m2.say)<over){m2.fix=m2.fix||m.fix; m2.note=m2.note||m.note; return m2}
+  }catch(e){}
+  return m;
+}
 /* 모델이 규칙을 어긴 교정·설명을 코드에서 한 번 더 거른다 */
 function tidy(m,text){
   var ko=/[가-힣]/.test(text), q=ko||/[?？]/.test(text), one=text.trim().split(/\s+/).length<=1;
   var latin=/^(de|en|es|fr)/.test(cfg.lang);
   if(!q)m.note="";
+  /* 뜻·문법 질문에는 설명(note)만 새로 받고, 말은 직전 질문을 그대로 다시 묻는다 */
+  var meta=ko||/\b(bedeutet|hei(ß|ss)t|wie sagt man|warum|wieso|unterschied|what does|how do you say|why)\b/i.test(text);
+  var prev=hist.filter(function(x){return x.r==="ai"}).slice(-1)[0];
+  if(m.note&&meta&&prev){
+    var qs=String(prev.say).split(/(?<=[.!?])\s+/).filter(function(x){return /[?？]\s*$/.test(x)});
+    if(qs.length){
+      var pre={de:"Gute Frage!",en:"Good question!",es:"¡Buena pregunta!",fr:"Bonne question !"}[cfg.lang.slice(0,2)]||"";
+      m.say=(pre?pre+" ":"")+qs[qs.length-1]; m.ko="좋은 질문이야! "+(prev.ko||""); m.words=prev.words||[]; m.options=prev.options||[];
+    }
+  }
   if(ko||one||viaOptionNow||/대문자|소문자/.test(m.fix)||/잘했어|잘 썼어|잘 말했어|완벽해|정확해|좋은 표현/.test(m.fix)||(latin&&!/[A-Za-zÄÖÜäöüßÀ-ÿ]{2}/.test(m.fix)))m.fix="";
   var nz=function(t){return String(t||"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"")};
   if(m.fix&&(nz(m.fix.split(/\s[—–-]\s/)[0])===nz(text)||/틀린 곳 없|틀린 데 없|문제없|맞지만|어색|주어와 동사를 갖추|문장으로 말하면|완전한 문장/.test(m.fix)))m.fix="";
@@ -514,7 +548,7 @@ async function send(text,viaOption){
   var me={r:"me",t:text}; hist.push(me); bubble(me); save("mb_hist",hist);
   setStatus("생각하는 중…");
   try{
-    var m=tidy(clean(await ai(rules(),turns())),text); prefetch(m);
+    var m=tidy(await askTurn(),text); prefetch(m);
     if(!viaOption&&!/[가-힣]/.test(text)){
       if(m.fix){cfg.streak=0;cfg.miss=(cfg.miss||0)+1; if(cfg.miss>=3&&lvNow()>LVMIN){setTimeout(function(){setLv(lvNow()-1,"세 번 연속 걸려서 한 단계 내렸어.")},0)} else save("mb_cfg",cfg)}
       else{cfg.miss=0;cfg.streak=(cfg.streak||0)+1; if(cfg.streak>=5&&lvNow()<10){setTimeout(function(){setLv(lvNow()+1,"다섯 번 연속 맞아서 한 단계 올렸어.")},0)} else save("mb_cfg",cfg)}
