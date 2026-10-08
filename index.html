@@ -1,15 +1,15 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>말동무</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0E7C86">
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes">
-<style>body{margin:0}[hidden]{display:none!important}</style></head><body><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>body{margin:0}[hidden]{display:none!important}</style></head><body><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap">
 <style>
 /* 짜임: 휴대폰 세로 한 화면. 위 = 친구 얼굴, 가운데 = 말풍선(스크롤), 아래 = 마이크 독. */
 :root{
   --bg:#EAF1F4; --surface:#FFFFFF; --ink:#14262E; --muted:#5B7078; --line:#CFDDE2;
   --friend:#FFC93C; --friend-ink:#3A2A00; --accent:#0E7C86; --accent-fg:#FFFFFF;
   --me-bg:#14262E; --me-fg:#F1F7F9; --hot:#D93A40; --hot-fg:#FFFFFF;
-  --display:"Jua","IBM Plex Sans KR",system-ui,sans-serif;
-  --body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    --display:"Nanum Gothic","NanumGothic","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  --body:"Nanum Gothic","NanumGothic","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0E1A1F; --surface:#182930; --ink:#E6F0F3; --muted:#8FA6AE; --line:#2B414A;
@@ -30,18 +30,8 @@ button{cursor:pointer}
 .app{height:100%;max-width:480px;margin:0 auto;padding-inline:16px;padding-block:10px 12px;display:flex;flex-direction:column;gap:10px}
 
 .top{display:flex;align-items:center;gap:12px}
-.face{width:92px;height:92px;flex:none}
-.face .head{fill:var(--friend)}
-.face .ink{fill:var(--friend-ink)}
-.face .cheek{fill:var(--hot);opacity:.28}
-.face .eye{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}
-.face .mouth{transform-box:fill-box;transform-origin:center}
-.talking .mouth{animation:talk .32s infinite alternate}
-@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
-@keyframes talk{from{transform:scaleY(.35)}to{transform:scaleY(1.5)}}
-@media (prefers-reduced-motion:reduce){.face .eye,.talking .mouth{animation:none}}
 .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.who h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.1}
+.who h1{font-family:var(--display);font-weight:800;font-size:26px;margin:0;line-height:1.1}
 .who p{margin:0;color:var(--muted);font-size:13px}
 .gear{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:13px}
 
@@ -82,7 +72,7 @@ button{cursor:pointer}
 .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
 .seg button{border:0;background:transparent;padding:6px 14px;font-size:13px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
-.mic{width:88px;height:88px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);font-family:var(--display);font-size:17px}
+.mic{width:88px;height:88px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);font-family:var(--display);font-weight:700;font-size:17px}
 .mic.on{background:var(--hot);color:var(--hot-fg);box-shadow:0 0 0 8px color-mix(in srgb,var(--hot) 25%,transparent)}
 .mic:disabled{opacity:.4;cursor:default}
 .type{display:flex;gap:8px;width:100%}
@@ -93,7 +83,7 @@ button{cursor:pointer}
   padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
 .sheet form{max-width:448px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .sheet header{display:flex;justify-content:space-between;align-items:center}
-.sheet h2{font-family:var(--display);font-weight:400;font-size:24px;margin:0}
+.sheet h2{font-family:var(--display);font-weight:800;font-size:24px;margin:0}
 .sheet h3{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:600}
 fieldset{border:0;padding:14px;margin:0;background:var(--surface);border-radius:16px;display:flex;flex-direction:column;gap:12px}
 .f{display:flex;flex-direction:column;gap:4px}
@@ -110,14 +100,6 @@ input[type=range]{accent-color:var(--accent);width:100%}
 
 <div class="app">
   <div class="top" id="top">
-    <svg class="face" viewBox="0 0 100 100" role="img" aria-label="AI 친구 얼굴">
-      <circle class="head" cx="50" cy="52" r="42"/>
-      <path class="head" d="M22 22 L30 4 L42 16 Z M78 22 L70 4 L58 16 Z"/>
-      <ellipse class="ink eye" cx="35" cy="46" rx="5" ry="7"/>
-      <ellipse class="ink eye" cx="65" cy="46" rx="5" ry="7"/>
-      <circle class="cheek" cx="24" cy="62" r="7"/><circle class="cheek" cx="76" cy="62" r="7"/>
-      <ellipse class="ink mouth" cx="50" cy="68" rx="9" ry="5"/>
-    </svg>
     <div class="who">
       <h1 id="friendName">Mia</h1>
       <p id="status">마이크를 누르고 말해 보세요</p>
@@ -293,7 +275,7 @@ function speak(text,done){
 function rules(){
   var L=LANGS[cfg.lang]||cfg.lang;
   return [
-   "너는 '"+(cfg.friend||"친구")+"'라는 이름의 다정한 말하기 친구야. 한국어를 쓰는 사람이 "+L+" 말하기를 연습하도록 돕는다.",
+   "너는 '"+(cfg.friend||"친구")+"'라는 이름의 말하기 연습 상대야. 한국어를 쓰는 사람이 "+L+" 말하기를 연습하도록 돕는다.",
    "[내 사용설명서]",
    "- 쓰는 사람: "+(cfg.who==="child"?"아이":"성인")+(cfg.age?" / 나이 "+cfg.age+"세":""),
    "- 배울 언어: "+L+" ("+cfg.lang+") / 수준: "+cfg.level,
@@ -304,7 +286,8 @@ function rules(){
    "- 수준에 맞는 짧은 문장 1~2개로 말하고, 끝에 쉬운 질문 하나를 붙여 대화를 이어 가.",
    "- 상대가 한국어로 말하면 그 말을 "+L+"로 어떻게 하는지 알려 주고 repeat에 넣어.",
    "- 상대가 "+L+"로 틀리게 말하면 고친 문장을 자연스럽게 다시 말해 주고 repeat에 넣어. 꾸짖지 마.",
-   (cfg.who==="child"?"- 아이에게 맞는 밝고 안전한 내용만 말해.":"- 어른 대 어른으로 편하게 말해."),
+   (cfg.who==="child"?"- 아이에게 맞는 밝고 안전한 내용만 말해. 한국어는 쉬운 반말로.":
+    "- 말투와 성격: 담백하고 편한 친구. 한국어(ko, fix, 뜻)는 전부 반말로, 짧게, 결론부터 말해. 존댓말(~요, ~습니다) 쓰지 마. 호들갑, 과한 칭찬, 감탄사 남발, 이모지 금지. 잘한 건 한마디로만 인정하고 넘어가. 틀린 건 돌려 말하지 말고 바로 짚되 깎아내리지는 마. 모르는 건 아는 척하지 마. 가끔 가벼운 농담은 괜찮아. "+L+"는 친구 사이 말투(예: 독일어면 du)로 자연스럽게."),
    "- 네가 상황극(롤플레이) 장면을 직접 골라서 시작하고 이끌어. 상대에게 장면을 고르라고 하지 마. 좋아하는 것·이야기하고 싶은 것에 맞는 장면으로, 같은 장면만 되풀이하지 마.",
    "- 상대가 자주 틀리는 것: "+(cfg.weak||"없음")+". 이런 실수가 나오면 fix에 한국어 한 줄로 짧고 직접적으로 짚어 줘. 틀린 게 없으면 fix는 빈칸.",
    "- words: say에 나온 모든 단어를 빠짐없이 순서대로 하나씩 풀이해(한두 개만 넣지 마). w=단어, pron=한글 발음 표기, ko=뜻.",
