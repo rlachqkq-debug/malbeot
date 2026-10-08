@@ -210,14 +210,14 @@ var HELLO={
  "es-ES":["¡Hola! Me alegro de verte. ¿De qué hablamos hoy?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "fr-FR":["Salut ! Content de te voir. De quoi on parle aujourd'hui ?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"]};
 var DEF={who:"adult",age:"",lang:"de-DE",level:"초급",likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
-  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.8-flash",showWords:true,showOpts:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, 명사 대문자, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-4-5-20251001"};
+  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, 명사 대문자, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-4-5-20251001"};
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
 
 var cfg=Object.assign({},DEF,load("mb_cfg",{}));
-if(cfg.model==="gemini-2.5-flash")cfg.model=DEF.model;
+if(cfg.model==="gemini-2.5-flash"||cfg.model==="gemini-3.8-flash"){cfg.model=DEF.model;save("mb_cfg",cfg);}
 var hist=load("mb_hist",[]);
 var used=load("mb_used",{d:today(),s:0}); if(used.d!==today())used={d:today(),s:0};
 var micLang="learn", busy=false, active=false, sample=null, sampleKnown=false, rec=null, listening=false, micBlocked=false;
@@ -330,8 +330,10 @@ async function askGemini(){
     contents:turns().map(function(t){return {role:t.role==="user"?"user":"model",parts:[{text:t.content}]}}),
     generationConfig:{responseMimeType:"application/json"}};
   var res;
-  try{res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":cfg.key},body:JSON.stringify(body)})}
-  catch(e){throw {code:"network"}}
+  var ctl=new AbortController(), tm=setTimeout(function(){ctl.abort()},30000);
+  try{res=await fetch(url,{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json","x-goog-api-key":cfg.key},body:JSON.stringify(body)})}
+  catch(e){throw {code:ctl.signal.aborted?"slow":"network"}}
+  finally{clearTimeout(tm)}
   if(!res.ok)throw {code:"http",status:res.status};
   var j=await res.json(), txt="";
   try{txt=j.candidates[0].content.parts.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
@@ -357,6 +359,7 @@ function errCopy(e){
   if(c==="rate_limited")return "지금은 요청이 많아요. 조금 뒤에 다시 말해 주세요.";
   if(c==="session_expired")return "로그인이 풀렸어요. 다시 로그인해 주세요.";
   if(c==="invalid_json")return "친구가 답을 잘못 적었어요. 한 번 더 말해 주세요.";
+  if(c==="slow")return "30초가 지나도 답이 없어서 멈췄어요. 다시 말해 보거나, 설정에서 모델 이름을 바꿔 보세요.";
   if(c==="network")return "인터넷 연결을 확인해 주세요.";
   if(c==="http")return e.status===400||e.status===401||e.status===403||e.status===404?"API 키나 모델 이름이 맞는지 설정에서 확인해 주세요. (오류 "+e.status+")":e.status===429?"사용 한도를 넘었어요. 조금 뒤에 다시 해 주세요.":"AI 서버가 답하지 않았어요. (오류 "+e.status+")";
   if(c==="refused")return "이 말에는 답할 수 없대요. 다른 말로 해 볼까요?";
