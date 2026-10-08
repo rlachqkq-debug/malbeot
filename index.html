@@ -383,12 +383,33 @@ async function lookup(tok,m,sp,sentence){
   var d=(m.words||[]).filter(function(x){return x.w.toLowerCase()===w.toLowerCase()})[0]||dict[k];
   if(d){showPop(sp,w,d);return}
   showPop(sp,w,{pron:"",ko:"찾는 중…"});
+  if(pending[k]){await pending[k]; if(dict[k]){if(popOn===sp)showPop(sp,w,dict[k]);return}}
   try{
     var o=await ai("너는 "+(LANGS[cfg.lang]||cfg.lang)+" 사전이야. 문장 속 단어 하나의 한글 발음 표기와, 이 문장에서의 한국어 뜻을 짧게 알려 줘. 반드시 JSON 하나만: {\"pron\":\"한글 발음\",\"ko\":\"뜻\"}",
       [{role:"user",content:"문장: "+sentence+"\n단어: "+w}]);
     d={pron:String(o&&o.pron||""),ko:String(o&&o.ko||"")}; dict[k]=d; save("mb_dict",dict);
     if(popOn===sp)showPop(sp,w,d);
   }catch(e){ if(popOn===sp)showPop(sp,w,{pron:"",ko:errCopy(e)}) }
+}
+var SEED={"hallo":["할로","안녕"],"schön":["쇤","반가운, 좋은"],"dich":["디히","너를"],"zu":["추","~하는 것 (zu + 동사)"],"sehen":["제엔","보다"],"worüber":["보뤼버","무엇에 대해"],"sprechen":["슈프레헨","말하다"],"wir":["비어","우리"],"heute":["호이테","오늘"]};
+Object.keys(SEED).forEach(function(w){var k="de-DE|"+w; if(!dict[k])dict[k]={pron:SEED[w][0],ko:SEED[w][1]}});
+var pending={};
+function wkey(w){return cfg.lang+"|"+w.toLowerCase()}
+function stripW(t){return t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"")}
+/* 답이 오자마자 그 안의 단어를 한 번에 미리 찾아 둔다 → 누르면 바로 뜬다 */
+function prefetch(m){
+  (m.words||[]).forEach(function(x){var k=wkey(x.w); if(!dict[k])dict[k]={pron:x.pron,ko:x.ko}});
+  var texts=[m.say,m.repeat||""].concat((m.options||[]).map(function(x){return x.t})).filter(Boolean), need=[];
+  texts.join(" ").split(/\s+/).forEach(function(t){var w=stripW(t); if(!w)return; var k=wkey(w);
+    if(dict[k]||pending[k]||need.some(function(n){return n.toLowerCase()===w.toLowerCase()}))return; need.push(w)});
+  if(!need.length){save("mb_dict",dict);return}
+  need=need.slice(0,40);
+  var pr=ai("너는 "+(LANGS[cfg.lang]||cfg.lang)+" 사전이야. 아래 단어 목록 각각의 한글 발음 표기와, 주어진 문장 속에서의 한국어 뜻을 짧게 알려 줘. 목록의 단어를 하나도 빼지 말고 철자 그대로 w에 넣어. 반드시 JSON 하나만: {\"words\":[{\"w\":\"단어\",\"pron\":\"한글 발음\",\"ko\":\"뜻\"}]}",
+      [{role:"user",content:"문장들:\n"+texts.join("\n")+"\n단어 목록: "+need.join(", ")}])
+    .then(function(o){(o&&Array.isArray(o.words)?o.words:[]).forEach(function(x){if(x&&x.w)dict[wkey(String(x.w))]={pron:String(x.pron||""),ko:String(x.ko||"")}}); save("mb_dict",dict)})
+    .catch(function(){})
+    .then(function(){need.forEach(function(w){delete pending[wkey(w)]})});
+  need.forEach(function(w){pending[wkey(w)]=pr});
 }
 function wordify(node,text,m,b){
   node.lang=cfg.lang;
@@ -417,7 +438,7 @@ async function send(text){
   var me={r:"me",t:text}; hist.push(me); bubble(me); save("mb_hist",hist);
   setStatus("생각하는 중…");
   try{
-    var m=clean(await ai(rules(),turns()));
+    var m=clean(await ai(rules(),turns())); prefetch(m);
     hist.push(m); if(hist.length>200)hist=hist.slice(-200); save("mb_hist",hist);
     var b=bubble(m,cfg.audioFirst&&("speechSynthesis" in window));
     setStatus("듣고 따라 해 보세요");
