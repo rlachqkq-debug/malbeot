@@ -211,7 +211,7 @@ var HELLO={
  "es-ES":["¡Hola! Me alegro de verte. ¿De qué hablamos hoy?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "fr-FR":["Salut ! Content de te voir. De quoi on parle aujourd'hui ?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"]};
 var DEF={who:"adult",age:"",lang:"de-DE",level:"왕초보",lv:2,streak:0,miss:0,likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
-  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-5-5"};
+  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-sonnet-5-5"};
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -219,7 +219,7 @@ function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-
 
 var cfg=Object.assign({},DEF,load("mb_cfg",{}));
 cfg.weak=String(cfg.weak||"").replace(/,?\s*명사 대문자( 표기)?( 누락)?/,"").replace(/^[,\s]+/,"");
-if(/^claude-haiku-4-5/.test(cfg.model_||"")||/^claude-haiku-4-5/.test(cfg.cmodel||"")){cfg.cmodel=DEF.cmodel;save("mb_cfg",cfg);}
+if(/^claude-haiku-4-5/.test(cfg.model_||"")||/^claude-haiku-(4-5|5-5)/.test(cfg.cmodel||"")){cfg.cmodel=DEF.cmodel;save("mb_cfg",cfg);}
 if(cfg.model==="gemini-2.5-flash"||cfg.model==="gemini-3.8-flash"){cfg.model=DEF.model;save("mb_cfg",cfg);}
 var hist=load("mb_hist",[]);
 var used=load("mb_used",{d:today(),s:0}); if(used.d!==today())used={d:today(),s:0};
