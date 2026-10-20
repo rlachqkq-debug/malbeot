@@ -185,11 +185,11 @@ input[type=range]{accent-color:var(--accent);width:100%}
       <fieldset>
         <div class="f"><label for="s_provider">어느 AI와 대화할까요</label>
           <select id="s_provider"><option value="claude">Claude</option><option value="gemini">Gemini</option></select></div>
-        <div class="f"><label for="s_ckey">Claude API 키</label><input id="s_ckey" type="password" autocomplete="off" placeholder="sk-ant-… 이 기기에만 저장돼요"></div>
+        <div class="f"><label for="s_ckey">Claude API 키</label><input id="s_ckey" type="password" autocomplete="off" placeholder="sk-ant-… (console.anthropic.com에서 발급)"></div>
         <div class="f"><label for="s_cmodel">Claude 모델 이름</label><input id="s_cmodel" type="text" autocomplete="off"></div>
         <div class="f"><label for="s_key">Gemini API 키</label><input id="s_key" type="password" autocomplete="off" placeholder="이 기기에만 저장돼요"></div>
         <div class="f"><label for="s_model">Gemini 모델 이름</label><input id="s_model" type="text" autocomplete="off"></div>
-        <p class="hint">키는 이 브라우저에만 저장돼요. 이 파일을 남에게 줄 땐 키가 들어 있지 않으니 안심해도 돼요. 여러 사람이 쓰게 하려면 키를 서버에 둬야 해요.</p>
+        <p class="hint">두 키를 다 넣었으면 위의 선택이 우선이야. 키는 이 브라우저에만 저장돼요. 이 파일을 남에게 줄 땐 키가 들어 있지 않으니 안심해도 돼요. 여러 사람이 쓰게 하려면 키를 서버에 둬야 해요.</p>
       </fieldset>
     </div>
     <p class="hint" id="aiMode"></p>
@@ -211,7 +211,7 @@ var HELLO={
  "es-ES":["¡Hola! Me alegro de verte. ¿De qué hablamos hoy?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "fr-FR":["Salut ! Content de te voir. De quoi on parle aujourd'hui ?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"]};
 var DEF={who:"adult",age:"",lang:"de-DE",level:"왕초보",lv:2,streak:0,miss:0,likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
-  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-4-5-20251001"};
+  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-haiku-5-5"};
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -219,6 +219,7 @@ function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-
 
 var cfg=Object.assign({},DEF,load("mb_cfg",{}));
 cfg.weak=String(cfg.weak||"").replace(/,?\s*명사 대문자( 표기)?( 누락)?/,"").replace(/^[,\s]+/,"");
+if(/^claude-haiku-4-5/.test(cfg.model_||"")||/^claude-haiku-4-5/.test(cfg.cmodel||"")){cfg.cmodel=DEF.cmodel;save("mb_cfg",cfg);}
 if(cfg.model==="gemini-2.5-flash"||cfg.model==="gemini-3.8-flash"){cfg.model=DEF.model;save("mb_cfg",cfg);}
 var hist=load("mb_hist",[]);
 var used=load("mb_used",{d:today(),s:0}); if(used.d!==today())used={d:today(),s:0};
@@ -407,8 +408,9 @@ async function askGemini(sys,msgs){
 }
 async function askAnthropic(sys,msgs){
   var j=await post("https://api.anthropic.com/v1/messages",{"x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs});
-  var txt=""; try{txt=j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
+    {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs.concat([{role:"assistant",content:"{"}])});
+  if(j&&j.type==="error")throw {code:"http",status:j.error&&/model/.test(j.error.message||"")?404:400};
+  var txt=""; try{txt="{"+j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
   return pj(txt);
 }
 function ai(sys,msgs){
