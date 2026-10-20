@@ -187,6 +187,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
           <select id="s_provider"><option value="claude">Claude</option><option value="gemini">Gemini</option></select></div>
         <div class="f"><label for="s_ckey">Claude API 키</label><input id="s_ckey" type="password" autocomplete="off" placeholder="sk-ant-… (console.anthropic.com에서 발급)"></div>
         <div class="f"><label for="s_cmodel">Claude 모델 이름</label><input id="s_cmodel" type="text" autocomplete="off"></div>
+        <div class="f"><label for="s_cws">Claude 워크스페이스 ID (키가 워크스페이스에 안 묶여 있을 때만)</label><input id="s_cws" type="text" autocomplete="off" placeholder="wrkspc_… 비워 둬도 돼요"></div>
         <div class="f"><label for="s_key">Gemini API 키</label><input id="s_key" type="password" autocomplete="off" placeholder="이 기기에만 저장돼요"></div>
         <div class="f"><label for="s_model">Gemini 모델 이름</label><input id="s_model" type="text" autocomplete="off"></div>
         <p class="hint">두 키를 다 넣었으면 위의 선택이 우선이야. 키는 이 브라우저에만 저장돼요. 이 파일을 남에게 줄 땐 키가 들어 있지 않으니 안심해도 돼요. 여러 사람이 쓰게 하려면 키를 서버에 둬야 해요.</p>
@@ -211,7 +212,7 @@ var HELLO={
  "es-ES":["¡Hola! Me alegro de verte. ¿De qué hablamos hoy?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"],
  "fr-FR":["Salut ! Content de te voir. De quoi on parle aujourd'hui ?","안녕! 만나서 반가워. 오늘은 무슨 얘기 할까?"]};
 var DEF={who:"adult",age:"",lang:"de-DE",level:"왕초보",lv:2,streak:0,miss:0,likes:"건축·건설 현장에서 쓰는 말",minutes:10,friend:"Mia",repeat:"조금",
-  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-sonnet-5-5"};
+  rate:0.88,showKo:true,audioFirst:true,limit:20,key:"",model:"gemini-3.1-flash-lite",showWords:true,showOpts:true,slang:true,weak:"동사 ich-형 활용, 주어 생략, 남성 4격 einen, ihm/ihnen 구분",voice:"",provider:"claude",ckey:"",cmodel:"claude-sonnet-5-5",cws:""};
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -407,7 +408,8 @@ async function askGemini(sys,msgs){
   return pj(txt);
 }
 async function askAnthropic(sys,msgs){
-  var j=await post("https://api.anthropic.com/v1/messages",{"x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+  var h={"x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}; if(cfg.cws)h["anthropic-workspace-id"]=cfg.cws;
+  var j=await post("https://api.anthropic.com/v1/messages",h,
     {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs});
   if(j&&j.type==="error")throw {code:"http",status:j.error&&/model/.test(j.error.message||"")?404:400};
   var txt=""; try{txt=j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
@@ -605,7 +607,7 @@ setInterval(function(){
 },1000);
 
 /* ---------- 설정 ---------- */
-var F=["who","age","lang","level","likes","minutes","friend","repeat","rate","limit","key","model","provider","ckey","cmodel","weak"];
+var F=["who","age","lang","level","likes","minutes","friend","repeat","rate","limit","key","model","provider","ckey","cmodel","cws","weak"];
 function fillVoices(){
   var sel=$("s_voice"), lang=$("s_lang").value, pre=lang.slice(0,2), vs=[];
   try{vs=speechSynthesis.getVoices().filter(function(x){return x.lang&&x.lang.replace("_","-").slice(0,2)===pre})}catch(e){}
@@ -633,7 +635,7 @@ $("setForm").addEventListener("submit",function(e){
   var oldLang=cfg.lang, oldLevel=cfg.level;
   F.forEach(function(k){cfg[k]=$("s_"+k).value});
   cfg.rate=Math.min(1.2,Math.max(0.6,Number(cfg.rate)||0.88)); cfg.limit=Math.max(0,Number(cfg.limit)||0); cfg.minutes=Math.max(1,Number(cfg.minutes)||10);
-  cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.voice=$("s_voice").value; if(cfg.key&&!cfg.ckey)cfg.provider="gemini"; if(cfg.ckey&&!cfg.key)cfg.provider="claude"; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked; cfg.slang=$("s_slang").checked;
+  cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.cws=String(cfg.cws||"").trim(); cfg.voice=$("s_voice").value; if(cfg.key&&!cfg.ckey)cfg.provider="gemini"; if(cfg.ckey&&!cfg.key)cfg.provider="claude"; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked; cfg.slang=$("s_slang").checked;
   cfg.showKo=$("s_showKo").checked; cfg.audioFirst=$("s_audioFirst").checked;
   save("mb_cfg",cfg);
   if(oldLevel!==cfg.level){cfg.lv={"왕초보":2,"초급":3,"중급":5,"고급":8}[cfg.level]||LVMIN;cfg.streak=0;cfg.miss=0;save("mb_cfg",cfg)} showLv();
