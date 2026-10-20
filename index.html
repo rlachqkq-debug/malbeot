@@ -392,7 +392,7 @@ async function post(url,headers,body){
   try{res=await fetch(url,{method:"POST",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},headers),body:JSON.stringify(body)})}
   catch(e){throw {code:ctl.signal.aborted?"slow":"network"}}
   finally{clearTimeout(tm)}
-  if(!res.ok)throw {code:"http",status:res.status};
+  if(!res.ok){var d="";try{var ej=await res.json();d=(ej.error&&ej.error.message)||(ej.error&&ej.error.type)||""}catch(e){} throw {code:"http",status:res.status,detail:String(d).slice(0,200)}}
   return await res.json();
 }
 async function askClaude(sys,msgs){
@@ -408,9 +408,9 @@ async function askGemini(sys,msgs){
 }
 async function askAnthropic(sys,msgs){
   var j=await post("https://api.anthropic.com/v1/messages",{"x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs.concat([{role:"assistant",content:"{"}])});
+    {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs});
   if(j&&j.type==="error")throw {code:"http",status:j.error&&/model/.test(j.error.message||"")?404:400};
-  var txt=""; try{txt="{"+j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
+  var txt=""; try{txt=j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
   return pj(txt);
 }
 function ai(sys,msgs){
@@ -498,6 +498,7 @@ function errCopy(e){
   if(c==="invalid_json")return "친구가 답을 잘못 적었어요. 한 번 더 말해 주세요.";
   if(c==="slow")return "30초가 지나도 답이 없어서 멈췄어요. 다시 말해 보거나, 설정에서 모델 이름을 바꿔 보세요.";
   if(c==="network")return "인터넷 연결을 확인해 주세요.";
+  if(c==="http"&&e.detail)return "AI 서버 오류 "+e.status+": "+e.detail;
   if(c==="http")return e.status===400||e.status===401||e.status===403||e.status===404?"API 키나 모델 이름이 맞는지 설정에서 확인해 주세요. (오류 "+e.status+")":e.status===429?"사용 한도를 넘었어요. 조금 뒤에 다시 해 주세요.":"AI 서버가 답하지 않았어요. (오류 "+e.status+")";
   if(c==="refused")return "이 말에는 답할 수 없대요. 다른 말로 해 볼까요?";
   return "답을 받지 못했어요. 한 번 더 말해 주세요.";
