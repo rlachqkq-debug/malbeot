@@ -386,7 +386,7 @@ function rules(){
     :ut%6===0?"- 관심사: "+(cfg.likes||"자유")+". 이번 턴에는 지금 화제에서 이 관심사 쪽으로 자연스럽게 다리를 놓아 화제를 넘겨도 돼."
     :"- 이번 턴에는 화제를 바꾸지 마. 학습자가 방금 한 말에 나온 것에 대해서만 반응하고 물어. 일, 현장, 공구 얘기를 네가 먼저 꺼내지 마."),
    "- 자주 틀리는 것: "+(cfg.weak||"없음")+".",
-   (chOn()?"\n[이번 챕터: "+(chNow()+1)+"장 "+chOn().t+"]\n- 핵심 단어(이것만 반복해서 익히는 게 목표): "+chOn().v.map(function(w){return w[0]+"("+w[2]+")"}).join(", ")+"\n- 문법 초점: "+chOn().g+"\n- 학습자가 아직 안 써 본 핵심 단어: "+(chLeft().map(function(w){return w[0]}).join(", ")||"없음")+"\n- 규칙: say에 핵심 단어를 매 턴 2개 이상 넣어. 질문은 학습자가 아직 안 써 본 핵심 단어로 답하게 유도하는 걸로 해. options 중 적어도 하나에는 그 단어를 넣어. 핵심 단어 밖의 새 단어는 한 턴에 최대 1개만, 그것도 꼭 필요할 때만. 챕터 밖 어려운 단어로 화제를 넓히지 마.\n- 지루하지 않게: 세 턴에 한 번은 질문만 하지 말고 네 얘기 한마디(나도 …), 작은 사건(커피가 떨어짐, 프린터가 멈춤), 가벼운 농담 중 하나를 섞어. 같은 질문 형태(Hast du …?)를 연달아 쓰지 마.":""),
+   (chOn()?"\n[이번 챕터: "+(chNow()+1)+"장 "+chOn().t+"]\n- 핵심 단어(이것만 반복해서 익히는 게 목표): "+chOn().v.map(function(w){return w[0]+"("+w[2]+")"}).join(", ")+"\n- 문법 초점: "+chOn().g+"\n- 학습자가 아직 안 써 본 핵심 단어: "+(chLeft().map(function(w){return w[0]}).join(", ")||"없음")+"\n- 규칙: say에 핵심 단어를 매 턴 2개 이상 넣어. 질문은 학습자가 아직 안 써 본 핵심 단어로 답하게 유도하는 걸로 해. options 중 적어도 하나에는 그 단어를 넣어. 핵심 단어 밖의 새 단어는 한 턴에 최대 1개만, 그것도 꼭 필요할 때만. 챕터 밖 어려운 단어로 화제를 넓히지 마.\n- 지루하지 않게: 세 턴에 한 번은 질문만 하지 말고 네 얘기 한마디(나도 …), 작은 사건(커피가 떨어짐, 프린터가 멈춤), 가벼운 농담 중 하나를 섞어. 같은 질문 형태(예: Hast du …?)를 연달아 쓰지 마. JSON 문자열 안에서는 큰따옴표를 쓰지 마.":""),
    "- 한 번 대화 시간: 약 "+cfg.minutes+"분.",
    "",
    "[난이도 "+lv+"/10 — 반드시 지켜]",
@@ -448,13 +448,31 @@ function turns(){
   return out;
 }
 function clean(o){
-  if(!o||typeof o!=="object"||!o.say)throw {code:"invalid_json"};
+  if(!o||typeof o!=="object"||!o.say)throw {code:"invalid_json",raw:JSON.stringify(o).slice(0,200)};
   var np=function(t){return String(t||"").replace(/\s*[\(（][^\)）]*[\)）]/g,"").trim()};
   return {r:"ai",say:np(o.say),ko:String(o.ko||""),repeat:cfg.repeat==="없음"?"":np(o.repeat),fix:String(o.fix||""),note:String(o.note||""),
     words:(Array.isArray(o.words)?o.words:[]).filter(function(x){return x&&x.w}).slice(0,20).map(function(x){return {w:String(x.w),pron:String(x.pron||""),ko:String(x.ko||"")}}),
     options:(Array.isArray(o.options)?o.options:[]).filter(function(x){return x&&x.t}).slice(0,3).map(function(x){return {t:np(x.t),ko:String(x.ko||"")}})};
 }
-function pj(txt){var a=txt.indexOf("{"),b=txt.lastIndexOf("}");try{return JSON.parse(txt.slice(a,b+1))}catch(e){throw {code:"invalid_json"}}}
+function pj(txt){
+  txt=String(txt||"").replace(/```[a-z]*|```/gi,"");
+  var a=txt.indexOf("{"),b=txt.lastIndexOf("}"), raw=txt.slice(a,b+1);
+  if(a<0||b<0)throw {code:"invalid_json",raw:txt};
+  try{return JSON.parse(raw)}catch(e){}
+  /* 흔한 깨짐 고치기: 후행 쉼표, 제어문자 */
+  var fixed=raw.replace(/,\s*([}\]])/g,"$1").replace(/[\u0000-\u001f]+/g," ");
+  try{return JSON.parse(fixed)}catch(e){}
+  /* 필드별로 건지기 (문자열 안 따옴표가 깨진 경우) */
+  var o={}, ok=false, keys=["say","ko","repeat","fix","note","words","options"];
+  keys.forEach(function(k,i){
+    var m=fixed.match(new RegExp('"'+k+'"\\s*:\\s*([\\s\\S]*?)\\s*(?:,\\s*"(?:'+keys.filter(function(x){return x!==k}).join("|")+')"\\s*:|}\\s*$)'));
+    if(!m)return; var v=m[1].trim();
+    if(k==="words"||k==="options"){try{o[k]=JSON.parse(v)}catch(e){} return}
+    v=v.replace(/^"|"$/g,"").replace(/\\"/g,'"').replace(/\\n/g," "); o[k]=v; if(k==="say"&&v)ok=true;
+  });
+  if(ok)return o;
+  throw {code:"invalid_json",raw:raw};
+}
 async function post(url,headers,body){
   var res, ctl=new AbortController(), tm=setTimeout(function(){ctl.abort()},30000);
   try{res=await fetch(url,{method:"POST",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},headers),body:JSON.stringify(body)})}
@@ -564,7 +582,7 @@ function errCopy(e){
   if(c==="not_granted"||c==="sampling_disabled"||c==="not_declared"||c==="capability_disabled")return "이 화면에서 Claude 사용이 허용되지 않았어요. 페이지를 다시 열고 허용을 눌러 주세요.";
   if(c==="rate_limited")return "지금은 요청이 많아요. 조금 뒤에 다시 말해 주세요.";
   if(c==="session_expired")return "로그인이 풀렸어요. 다시 로그인해 주세요.";
-  if(c==="invalid_json")return "친구가 답을 잘못 적었어요. 한 번 더 말해 주세요.";
+  if(c==="invalid_json")return "친구가 답을 잘못 적었어요. 한 번 더 말해 주세요."+(e.raw?" (받은 답: "+String(e.raw).slice(0,140)+"…)":"");
   if(c==="slow")return "30초가 지나도 답이 없어서 멈췄어요. 다시 말해 보거나, 설정에서 모델 이름을 바꿔 보세요.";
   if(c==="network")return "인터넷 연결을 확인해 주세요.";
   if(c==="http"&&e.detail)return "AI 서버 오류 "+e.status+": "+e.detail;
@@ -581,7 +599,11 @@ function tooLong(say){
   return (ss.length>LVSENT[lv]?ss.length-LVSENT[lv]:0)*100+Math.max(0,mx-LVW[lv]);
 }
 async function askTurn(){
-  var m=clean(await ai(rules(),turns())), over=tooLong(m.say);
+  var m;
+  try{m=clean(await ai(rules(),turns()))}
+  catch(e){ if(e.code!=="invalid_json")throw e;
+    m=clean(await ai(rules()+"\n\n[중요] 방금 답이 올바른 JSON이 아니었어. 이번엔 코드 펜스 없이 JSON 객체 하나만 내. 문자열 안의 큰따옴표는 쓰지 말고 작은따옴표로 바꿔.",turns())); }
+  var over=tooLong(m.say);
   if(!over)return m;
   try{
     var m2=clean(await ai(rules()+"\n\n[다시 쓰기] 네가 방금 낸 say는 '"+m.say+"'였는데 난이도 "+lvNow()+"에 비해 너무 길어. 같은 내용을 본문 "+LVSENT[lvNow()]+"문장, 문장당 단어 "+LVW[lvNow()]+"개 이하로 줄여서 같은 JSON 형식으로 다시 써. words, options, ko도 새 say에 맞춰.",turns()));
