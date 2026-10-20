@@ -33,6 +33,13 @@ button{cursor:pointer}
 .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .who h1{font-family:var(--display);font-weight:800;font-size:26px;margin:0;line-height:1.1}
 .who p{margin:0;color:var(--muted);font-size:13px}
+.ch{display:flex;flex-direction:column;gap:6px}
+.chtitle{text-align:left;border:0;background:transparent;padding:0;font-size:13px;color:var(--accent);font-weight:700}
+.chwords{display:flex;flex-wrap:wrap;gap:6px}
+.chw{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:13px;color:var(--muted)}
+.chw.ok{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.chko{position:absolute;left:0;top:110%;z-index:3;white-space:nowrap;background:var(--me-bg);color:var(--me-fg);border-radius:8px;padding:4px 8px;font-size:12px}
+.ch .btn{align-self:flex-start;padding:6px 14px;font-size:13px}
 .lv{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .lv span{flex:1;font-variant-numeric:tabular-nums}
 .lv button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:13px;color:var(--ink)}
@@ -113,6 +120,11 @@ input[type=range]{accent-color:var(--accent);width:100%}
     <button class="gear" id="openSet" type="button" aria-label="설정 열기">설정</button>
   </div>
 
+  <div class="ch" id="chbar" hidden>
+    <button type="button" id="chTitle" class="chtitle">1장</button>
+    <div class="chwords" id="chWords" hidden></div>
+    <button type="button" id="chNext" class="btn" hidden>다음 장으로</button>
+  </div>
   <div class="lv">
     <span id="lvOut">난이도 2 / 10</span>
     <button type="button" id="lvDown">쉽게</button>
@@ -174,6 +186,8 @@ input[type=range]{accent-color:var(--accent);width:100%}
       <div class="row"><label for="s_showWords">단어 풀이 보이기 (발음 · 뜻)</label><input id="s_showWords" type="checkbox"></div>
       <div class="row"><label for="s_showOpts">답 예시 보이기</label><input id="s_showOpts" type="checkbox"></div>
       <div class="row"><label for="s_slang">슬랭 · 욕설 가끔 섞기 (성인만)</label><input id="s_slang" type="checkbox"></div>
+      <div class="f"><label for="s_ch">챕터 (독일어)</label>
+        <select id="s_ch"></select></div>
       <div class="f"><label for="s_weak">자주 틀리는 것 (나오면 짚어 줘요)</label><input id="s_weak" type="text"></div>
       <div class="row"><label for="s_audioFirst">소리 먼저, 글자는 나중에</label><input id="s_audioFirst" type="checkbox"></div>
       <div class="f"><label for="s_limit">하루 시간 제한(분, 0 = 제한 없음)</label><input id="s_limit" type="number" min="0" max="600" inputmode="numeric"></div>
@@ -260,8 +274,9 @@ function bubble(m,veil){
 function note(t,warn){var n=el("p","note"+(warn?" warn":""),t);chat.appendChild(n);chat.scrollTop=chat.scrollHeight;return n}
 function renderAll(){
   chat.textContent="";
+  if(!hist.length&&chOn()){cfg.chStart=0;save("mb_cfg",cfg);}
   if(!hist.length){var h=HELLO[cfg.lang]||HELLO["en-US"];hist.push({r:"ai",say:h[0],ko:h[1],repeat:""});}
-  hist.forEach(function(m){bubble(m,false)});
+  hist.forEach(function(m){bubble(m,false)}); showCh();
   if(locked())note("오늘 정한 시간을 다 썼어요. 내일 또 만나요.",true);
 }
 function applyCfg(){
@@ -303,6 +318,56 @@ var LV=["",
 var LVMIN=2, LVSENT=[0,1,1,2,2,2,2,2,3,3,4], LVW=[0,7,7,8,9,10,11,13,15,18,99];
 var SCENES_EASY=["아침에 동료와 인사","커피 머신 앞에서","점심 뭐 먹을지","오늘 날씨","퇴근 전 인사","주말에 뭐 했는지","피곤한 월요일","사무실 자리에서 간식"];
 var SCENES_WORK=["프린터로 도면 출력 부탁","회의 시간 잡기","현장 가기 전 안전모 챙기기","자재 배달이 늦음","고객 미팅 준비","도면 수정 요청","현장에서 치수 재기","마감이 급한 날"];
+/* ---------- 챕터 (독일어) ---------- */
+var CH=[
+ {t:"인사와 안부",g:"Wie geht's? / Mir geht es gut. — 주어 ich/du와 동사 bin/bist, 현재형",
+  v:[["Hallo","할로","안녕",["hallo"]],["Guten Morgen","구텐 모르겐","좋은 아침",["guten morgen","morgen"]],["Wie geht's?","비 게츠","어떻게 지내?",["geht","gehts","geht's"]],["gut","구트","좋아",["gut"]],["müde","뮈데","피곤한",["müde","muede"]],["danke","당케","고마워",["danke"]],["auch","아우흐","~도",["auch"]],["heute","호이테","오늘",["heute"]],["Tschüss","취스","잘 가",["tschüss","tschuess"]],["bis morgen","비스 모르겐","내일 봐",["bis morgen","bis"]]],
+  b:["아침에 사무실에서 마주쳐 인사","서로 안부와 컨디션 묻기","오늘 뭐 하는지 한마디","퇴근 인사"]},
+ {t:"커피와 점심",g:"Ich möchte … / Ich trinke … — 남성 명사 4격 einen (einen Kaffee)",
+  v:[["Kaffee","카페","커피",["kaffee"]],["trinken","트링켄","마시다",["trinken","trinke","trinkst","trinkt"]],["Milch","밀히","우유",["milch"]],["Zucker","추커","설탕",["zucker"]],["essen","에센","먹다",["essen","esse","isst"]],["Mittagessen","미탁에센","점심",["mittagessen","mittag"]],["Hunger","훙어","배고픔",["hunger"]],["lecker","레커","맛있는",["lecker"]],["möchte","뫼히테","~하고 싶어",["möchte","moechte"]],["bitte","비테","부탁해 / 주세요",["bitte"]]],
+  b:["커피 머신 앞에서 뭐 마실지","우유·설탕 취향","점심 뭐 먹을지 정하기","맛 평가하고 다음에 또 가기"]},
+ {t:"사무실 물건",g:"Wo ist …? / Ich brauche … — 정관사 der/die/das, 의문사 wo",
+  v:[["Büro","뷔로","사무실",["büro","buero"]],["Tisch","티슈","책상",["tisch"]],["Stuhl","슈툴","의자",["stuhl"]],["Drucker","드루커","프린터",["drucker"]],["drucken","드루켄","인쇄하다",["drucken","drucke","druckst","druckt"]],["Plan","플란","도면",["plan","pläne","plaene"]],["Stift","슈티프트","펜",["stift"]],["brauchen","브라우헨","필요하다",["brauchen","brauche","brauchst","braucht"]],["haben","하벤","가지다",["haben","habe","hast","hat"]],["wo","보","어디",["wo"]]],
+  b:["펜이 없어서 빌리기","프린터로 도면 뽑기","프린터 자리가 어딘지","도면을 책상에 두기"]},
+ {t:"시간과 약속",g:"Um wie viel Uhr? / Am Montag — 시각 um, 요일 am",
+  v:[["Termin","테어민","약속·일정",["termin"]],["Uhr","우어","시",["uhr"]],["wann","반","언제",["wann"]],["um","움","~시에",["um"]],["Montag","몬탁","월요일",["montag"]],["Freitag","프라이탁","금요일",["freitag"]],["Zeit","차이트","시간",["zeit"]],["spät","슈펫","늦은",["spät","spaet"]],["früh","프뤼","이른",["früh","frueh"]],["morgen","모르겐","내일",["morgen"]]],
+  b:["회의 시간 잡기","시간 있는지 묻기","너무 이르거나 늦다고 조정","약속 확인하고 마무리"]},
+ {t:"현장 가기",g:"Ich fahre mit dem Auto. — 전치사 mit + 3격 (dem)",
+  v:[["Baustelle","바우슈텔레","공사 현장",["baustelle"]],["Helm","헬름","안전모",["helm"]],["fahren","파렌","(차로) 가다",["fahren","fahre","fährst","fährt","faehrst"]],["Auto","아우토","자동차",["auto"]],["gehen","게엔","가다",["gehen","gehe","gehst","geht"]],["kommen","코멘","오다",["kommen","komme","kommst","kommt"]],["mit","미트","~와 함께",["mit"]],["zusammen","추자멘","같이",["zusammen"]],["Werkzeug","베르크초익","공구",["werkzeug"]],["Hammer","하머","망치",["hammer"]]],
+  b:["같이 현장 갈지 묻기","안전모·공구 챙기기","차로 갈지 걸어갈지","현장 도착해서 한마디"]},
+ {t:"도면과 치수",g:"Die Wand ist drei Meter lang. — 형용사와 숫자, 치수 말하기",
+  v:[["Zeichnung","차이히눙","도면",["zeichnung"]],["zeichnen","차이히넨","그리다",["zeichnen","zeichne","zeichnest","zeichnet"]],["Meter","메터","미터",["meter"]],["groß","그로스","큰",["groß","gross"]],["klein","클라인","작은",["klein"]],["messen","메센","재다",["messen","messe","misst"]],["Wand","반트","벽",["wand"]],["Tür","튀어","문",["tür","tuer"]],["Fenster","펜스터","창문",["fenster"]],["Maß","마스","치수",["maß","mass","maße"]]],
+  b:["도면 보며 방 크기 얘기","벽 길이 재기","문·창문 위치","수정할 치수 정하기"]},
+ {t:"부탁과 요청",g:"Kannst du mir … geben? — 조동사 können, 3격 mir/dir",
+  v:[["können","쾨넨","~할 수 있다",["können","kann","kannst","koennen"]],["geben","게벤","주다",["geben","gebe","gibst","gibt"]],["zeigen","차이겐","보여 주다",["zeigen","zeige","zeigst","zeigt"]],["schicken","쉬켄","보내다",["schicken","schicke","schickst","schickt"]],["helfen","헬펜","돕다",["helfen","helfe","hilfst","hilft"]],["Moment","모멘트","잠깐",["moment"]],["sofort","조포르트","바로",["sofort"]],["fertig","페르티히","다 된",["fertig"]],["noch","노흐","아직·더",["noch"]],["mir","미어","나에게",["mir","dir"]]],
+  b:["도면 보여 달라고 하기","메일로 보내 달라고 하기","잠깐만 기다리라고","다 됐는지 확인"]},
+ {t:"문제와 고장",g:"Der Drucker funktioniert nicht. — 부정 nicht, 이유 묻기 warum",
+  v:[["kaputt","카푸트","고장 난",["kaputt"]],["Problem","프로블렘","문제",["problem"]],["funktionieren","풍크치오니렌","작동하다",["funktionieren","funktioniert"]],["nicht","니히트","~아니다",["nicht"]],["warum","바룸","왜",["warum"]],["reparieren","레파리렌","고치다",["reparieren","repariere","reparierst","repariert"]],["Fehler","펠러","실수·오류",["fehler"]],["schnell","슈넬","빨리",["schnell"]],["langsam","랑잠","천천히",["langsam"]],["Hilfe","힐페","도움",["hilfe"]]],
+  b:["프린터가 안 됨","왜 안 되는지 같이 보기","고칠 수 있는지, 누구 부를지","해결되고 한마디"]}
+];
+function chOn(){return cfg.lang==="de-DE"&&CH[chNow()]}
+function chNow(){return Math.min(CH.length-1,Math.max(0,Number(cfg.ch)||0))}
+function chUsed(){cfg.used=cfg.used||{}; var u=cfg.used[chNow()]=cfg.used[chNow()]||{}; return u}
+function chMark(text){
+  var c=chOn(); if(!c)return; var u=chUsed(), t=" "+String(text).toLowerCase().replace(/[^\p{L}\p{N}']+/gu," ")+" ", hit=false;
+  c.v.forEach(function(w){ if(w[3].some(function(f){return t.indexOf(" "+f+" ")>=0})){u[w[0]]=(u[w[0]]||0)+1;hit=true} });
+  if(hit)save("mb_cfg",cfg); showCh();
+}
+function chLeft(){var c=chOn(); if(!c)return []; var u=chUsed(); return c.v.filter(function(w){return !u[w[0]]})}
+function chTurns(){var s=cfg.chStart||0; return Math.max(0,hist.filter(function(x){return x.r==="me"}).length-s)}
+function chBeat(){var c=chOn(); return c?c.b[Math.min(c.b.length-1,Math.floor(chTurns()/3))]:""}
+function showCh(){
+  var bar=$("chbar"); if(!bar)return; var c=chOn(); bar.hidden=!c; if(!c)return;
+  var u=chUsed(), n=c.v.filter(function(w){return u[w[0]]}).length;
+  $("chTitle").textContent=(chNow()+1)+"장 "+c.t+" · 핵심 단어 "+n+"/"+c.v.length;
+  var box=$("chWords"); box.textContent="";
+  c.v.forEach(function(w){var k=el("button","chw"+(u[w[0]]?" ok":""),w[0]);k.type="button";k.lang="de-DE";
+    k.onclick=function(e){e.stopPropagation();speak(w[0],null);var p=el("span","chko",w[1]+" · "+w[2]);k.appendChild(p);setTimeout(function(){p.remove()},2500)};box.appendChild(k)});
+  var done=n>=c.v.length&&chTurns()>=10;
+  $("chNext").hidden=!done||chNow()>=CH.length-1;
+}
+function setCh(i,why){cfg.ch=Math.min(CH.length-1,Math.max(0,i)); cfg.chStart=hist.filter(function(x){return x.r==="me"}).length; save("mb_cfg",cfg); showCh(); if(why)note(why)}
+
 function pickScene(lv){var a=lv<=3?SCENES_EASY.concat(SCENES_WORK.slice(0,3)):SCENES_EASY.slice(0,4).concat(SCENES_WORK);return a[Math.floor(Math.random()*a.length)]}
 
 function lvNow(){return Math.min(10,Math.max(LVMIN,Number(cfg.lv)||LVMIN))}
@@ -316,10 +381,12 @@ function rules(){
    "",
    "[학습자]",
    "- "+(kid?"아이":"성인")+(cfg.age?", "+cfg.age+"세":"")+". 배우는 언어: "+L+" ("+cfg.lang+").",
-   (ut<=1?"- 관심사: "+(cfg.likes||"자유")+". 이번 대화는 이 상황으로 열어: "+pickScene(lv)+"."
+   (chOn()?"- 이번 대화의 장면 흐름: "+chOn().b.join(" → ")+". 지금 단계: "+chBeat()+". 이 단계 안에서 대화해.":
+    ut<=1?"- 관심사: "+(cfg.likes||"자유")+". 이번 대화는 이 상황으로 열어: "+pickScene(lv)+"."
     :ut%6===0?"- 관심사: "+(cfg.likes||"자유")+". 이번 턴에는 지금 화제에서 이 관심사 쪽으로 자연스럽게 다리를 놓아 화제를 넘겨도 돼."
     :"- 이번 턴에는 화제를 바꾸지 마. 학습자가 방금 한 말에 나온 것에 대해서만 반응하고 물어. 일, 현장, 공구 얘기를 네가 먼저 꺼내지 마."),
    "- 자주 틀리는 것: "+(cfg.weak||"없음")+".",
+   (chOn()?"\n[이번 챕터: "+(chNow()+1)+"장 "+chOn().t+"]\n- 핵심 단어(이것만 반복해서 익히는 게 목표): "+chOn().v.map(function(w){return w[0]+"("+w[2]+")"}).join(", ")+"\n- 문법 초점: "+chOn().g+"\n- 학습자가 아직 안 써 본 핵심 단어: "+(chLeft().map(function(w){return w[0]}).join(", ")||"없음")+"\n- 규칙: say에 핵심 단어를 매 턴 2개 이상 넣어. 질문은 학습자가 아직 안 써 본 핵심 단어로 답하게 유도하는 걸로 해. options 중 적어도 하나에는 그 단어를 넣어. 핵심 단어 밖의 새 단어는 한 턴에 최대 1개만, 그것도 꼭 필요할 때만. 챕터 밖 어려운 단어로 화제를 넓히지 마.\n- 지루하지 않게: 세 턴에 한 번은 질문만 하지 말고 네 얘기 한마디(나도 …), 작은 사건(커피가 떨어짐, 프린터가 멈춤), 가벼운 농담 중 하나를 섞어. 같은 질문 형태(Hast du …?)를 연달아 쓰지 마.":""),
    "- 한 번 대화 시간: 약 "+cfg.minutes+"분.",
    "",
    "[난이도 "+lv+"/10 — 반드시 지켜]",
@@ -551,6 +618,7 @@ async function send(text,viaOption){
   if(locked()){note("오늘 정한 시간을 다 썼어요. 내일 또 만나요.",true);return}
   active=true; busy=true;
   var me={r:"me",t:text}; hist.push(me); bubble(me); save("mb_hist",hist);
+  if(!viaOption&&!/[가-힣]/.test(text))chMark(text);
   setStatus("생각하는 중…");
   try{
     var m=tidy(await askTurn(),text); prefetch(m);
@@ -620,6 +688,7 @@ $("tryVoice").onclick=function(){var l=$("s_lang").value;speak((HELLO[l]||HELLO[
 if("speechSynthesis" in window){try{speechSynthesis.addEventListener("voiceschanged",function(){if(!$("sheet").hidden)fillVoices()})}catch(e){}}
 function openSheet(){
   F.forEach(function(k){$("s_"+k).value=cfg[k]});
+  var sc=$("s_ch"); sc.textContent=""; CH.forEach(function(c,i){var o=el("option",null,(i+1)+"장 "+c.t);o.value=i;sc.appendChild(o)}); sc.value=String(chNow());
   fillVoices(); $("s_showWords").checked=!!cfg.showWords; $("s_showOpts").checked=!!cfg.showOpts; $("s_slang").checked=!!cfg.slang;
   $("s_showKo").checked=!!cfg.showKo; $("s_audioFirst").checked=!!cfg.audioFirst; $("rateOut").textContent=Number(cfg.rate).toFixed(2);
   $("usedOut").textContent="오늘 쓴 시간: "+Math.floor(used.s/60)+"분";
@@ -636,6 +705,7 @@ $("setForm").addEventListener("submit",function(e){
   F.forEach(function(k){cfg[k]=$("s_"+k).value});
   cfg.rate=Math.min(1.2,Math.max(0.6,Number(cfg.rate)||0.88)); cfg.limit=Math.max(0,Number(cfg.limit)||0); cfg.minutes=Math.max(1,Number(cfg.minutes)||10);
   cfg.key=cfg.key.trim(); cfg.model=cfg.model.trim()||DEF.model; cfg.ckey=cfg.ckey.trim(); cfg.cmodel=cfg.cmodel.trim()||DEF.cmodel; cfg.cws=String(cfg.cws||"").trim(); cfg.voice=$("s_voice").value; if(cfg.key&&!cfg.ckey)cfg.provider="gemini"; if(cfg.ckey&&!cfg.key)cfg.provider="claude"; cfg.showWords=$("s_showWords").checked; cfg.showOpts=$("s_showOpts").checked; cfg.slang=$("s_slang").checked;
+  if(Number($("s_ch").value)!==chNow())setCh(Number($("s_ch").value));
   cfg.showKo=$("s_showKo").checked; cfg.audioFirst=$("s_audioFirst").checked;
   save("mb_cfg",cfg);
   if(oldLevel!==cfg.level){cfg.lv={"왕초보":2,"초급":3,"중급":5,"고급":8}[cfg.level]||LVMIN;cfg.streak=0;cfg.miss=0;save("mb_cfg",cfg)} showLv();
@@ -645,9 +715,12 @@ $("setForm").addEventListener("submit",function(e){
 var wipeArmed=false;
 $("wipe").onclick=function(){
   if(!wipeArmed){wipeArmed=true;this.textContent="한 번 더 누르면 모두 지워요";return}
-  hist=[]; save("mb_hist",hist); wipeArmed=false; this.textContent="지웠어요"; renderAll();
+  hist=[]; save("mb_hist",hist); cfg.chStart=0; save("mb_cfg",cfg); wipeArmed=false; this.textContent="지웠어요"; renderAll();
 };
 
+$("chTitle").onclick=function(){$("chWords").hidden=!$("chWords").hidden};
+$("chNext").onclick=function(){setCh(chNow()+1,(chNow()+2)+"장 '"+CH[chNow()+1].t+"' 시작. 새 핵심 단어 10개야.")};
+showCh();
 $("lvDown").onclick=function(){if(lvNow()<=LVMIN){note("이미 가장 쉬운 단계야.");return} setLv(lvNow()-1,"다음 답부터 더 쉽게 갈게.")};
 $("lvUp").onclick=function(){if(lvNow()>=10){note("이미 가장 어려운 단계야.");return} setLv(lvNow()+1,"다음 답부터 조금 어렵게 갈게.")};
 showLv();
