@@ -321,41 +321,63 @@ var SCENES_WORK=["프린터로 도면 출력 부탁","회의 시간 잡기","현
 /* ---------- 챕터 (독일어) ---------- */
 var CH=[
  {t:"인사와 안부",g:"Wie geht's? / Mir geht es gut. — 주어 ich/du와 동사 bin/bist, 현재형",
-  v:[["Hallo","할로","안녕",["hallo"]],["Guten Morgen","구텐 모르겐","좋은 아침",["guten morgen","morgen"]],["Wie geht's?","비 게츠","어떻게 지내?",["geht","gehts","geht's"]],["gut","구트","좋아",["gut"]],["müde","뮈데","피곤한",["müde","muede"]],["danke","당케","고마워",["danke"]],["auch","아우흐","~도",["auch"]],["heute","호이테","오늘",["heute"]],["Tschüss","취스","잘 가",["tschüss","tschuess"]],["bis morgen","비스 모르겐","내일 봐",["bis morgen","bis"]]],
-  b:["아침에 사무실에서 마주쳐 인사","서로 안부와 컨디션 묻기","오늘 뭐 하는지 한마디","퇴근 인사"]},
+  v:[["Hallo","할로","안녕",["hallo"],{at:[0]}],["Guten Morgen","구텐 모르겐","좋은 아침",["guten morgen"],{at:[0]}],["Wie geht's?","비 게츠","어떻게 지내?",["geht","gehts","geht's"],{q:1}],["gut","구트","좋아",["gut"]],["müde","뮈데","피곤한",["müde","muede"]],["danke","당케","고마워",["danke"]],["auch","아우흐","~도",["auch"]],["heute","호이테","오늘",["heute"]],["Tschüss","취스","잘 가",["tschüss","tschuess"],{at:[7]}],["bis morgen","비스 모르겐","내일 봐",["bis morgen"],{at:[7]}]],
+  b:["아침 출근길에 마주쳐 인사", "주말에 뭐 했는지", "오늘 날씨", "오늘 할 일", "피곤한 이유(늦게 잠, 일이 많음)", "점심 같이 먹을지", "오후에 커피 한 잔", "퇴근하며 내일 보자고 인사"]},
  {t:"커피와 점심",g:"Ich möchte … / Ich trinke … — 남성 명사 4격 einen (einen Kaffee)",
   v:[["Kaffee","카페","커피",["kaffee"]],["trinken","트링켄","마시다",["trinken","trinke","trinkst","trinkt"]],["Milch","밀히","우유",["milch"]],["Zucker","추커","설탕",["zucker"]],["essen","에센","먹다",["essen","esse","isst"]],["Mittagessen","미탁에센","점심",["mittagessen","mittag"]],["Hunger","훙어","배고픔",["hunger"]],["lecker","레커","맛있는",["lecker"]],["möchte","뫼히테","~하고 싶어",["möchte","moechte"]],["bitte","비테","부탁해 / 주세요",["bitte"]]],
-  b:["커피 머신 앞에서 뭐 마실지","우유·설탕 취향","점심 뭐 먹을지 정하기","맛 평가하고 다음에 또 가기"]},
+  b:["커피 머신 앞에서", "우유·설탕 취향", "커피가 떨어짐", "점심 메뉴 고민", "식당에서 주문", "맛 평가", "누가 계산할지", "다음에 또 오자고"]},
  {t:"사무실 물건",g:"Wo ist …? / Ich brauche … — 정관사 der/die/das, 의문사 wo",
-  v:[["Büro","뷔로","사무실",["büro","buero"]],["Tisch","티슈","책상",["tisch"]],["Stuhl","슈툴","의자",["stuhl"]],["Drucker","드루커","프린터",["drucker"]],["drucken","드루켄","인쇄하다",["drucken","drucke","druckst","druckt"]],["Plan","플란","도면",["plan","pläne","plaene"]],["Stift","슈티프트","펜",["stift"]],["brauchen","브라우헨","필요하다",["brauchen","brauche","brauchst","braucht"]],["haben","하벤","가지다",["haben","habe","hast","hat"]],["wo","보","어디",["wo"]]],
-  b:["펜이 없어서 빌리기","프린터로 도면 뽑기","프린터 자리가 어딘지","도면을 책상에 두기"]},
+  v:[["Büro","뷔로","사무실",["büro","buero"]],["Tisch","티슈","책상",["tisch"]],["Stuhl","슈툴","의자",["stuhl"]],["Drucker","드루커","프린터",["drucker"]],["drucken","드루켄","인쇄하다",["drucken","drucke","druckst","druckt"]],["Plan","플란","도면",["plan","pläne","plaene"]],["Stift","슈티프트","펜",["stift"]],["brauchen","브라우헨","필요하다",["brauchen","brauche","brauchst","braucht"]],["haben","하벤","가지다",["haben","habe","hast","hat"]],["wo","보","어디",["wo"],{q:1}]],
+  b:["펜이 없어서 빌리기", "책상이 지저분함", "의자가 불편함", "프린터로 도면 뽑기", "도면이 어디 있는지 찾기", "새 사무용품 사기"]},
  {t:"시간과 약속",g:"Um wie viel Uhr? / Am Montag — 시각 um, 요일 am",
-  v:[["Termin","테어민","약속·일정",["termin"]],["Uhr","우어","시",["uhr"]],["wann","반","언제",["wann"]],["um","움","~시에",["um"]],["Montag","몬탁","월요일",["montag"]],["Freitag","프라이탁","금요일",["freitag"]],["Zeit","차이트","시간",["zeit"]],["spät","슈펫","늦은",["spät","spaet"]],["früh","프뤼","이른",["früh","frueh"]],["morgen","모르겐","내일",["morgen"]]],
-  b:["회의 시간 잡기","시간 있는지 묻기","너무 이르거나 늦다고 조정","약속 확인하고 마무리"]},
+  v:[["Termin","테어민","약속·일정",["termin"]],["Uhr","우어","시",["uhr"]],["wann","반","언제",["wann"],{q:1}],["um","움","~시에",["um"]],["Montag","몬탁","월요일",["montag"]],["Freitag","프라이탁","금요일",["freitag"]],["Zeit","차이트","시간",["zeit"]],["spät","슈펫","늦은",["spät","spaet"]],["früh","프뤼","이른",["früh","frueh"]],["morgen","모르겐","내일",["morgen"]]],
+  b:["회의 시간 잡기", "언제 시간 되는지", "너무 이르거나 늦음", "요일 바꾸기", "지각한 동료", "주말 계획"]},
  {t:"현장 가기",g:"Ich fahre mit dem Auto. — 전치사 mit + 3격 (dem)",
   v:[["Baustelle","바우슈텔레","공사 현장",["baustelle"]],["Helm","헬름","안전모",["helm"]],["fahren","파렌","(차로) 가다",["fahren","fahre","fährst","fährt","faehrst"]],["Auto","아우토","자동차",["auto"]],["gehen","게엔","가다",["gehen","gehe","gehst","geht"]],["kommen","코멘","오다",["kommen","komme","kommst","kommt"]],["mit","미트","~와 함께",["mit"]],["zusammen","추자멘","같이",["zusammen"]],["Werkzeug","베르크초익","공구",["werkzeug"]],["Hammer","하머","망치",["hammer"]]],
-  b:["같이 현장 갈지 묻기","안전모·공구 챙기기","차로 갈지 걸어갈지","현장 도착해서 한마디"]},
+  b:["같이 현장 갈지", "차로 갈지 걸어갈지", "안전모·공구 챙기기", "길이 막힘", "현장 도착", "망치 빌리기"]},
  {t:"도면과 치수",g:"Die Wand ist drei Meter lang. — 형용사와 숫자, 치수 말하기",
   v:[["Zeichnung","차이히눙","도면",["zeichnung"]],["zeichnen","차이히넨","그리다",["zeichnen","zeichne","zeichnest","zeichnet"]],["Meter","메터","미터",["meter"]],["groß","그로스","큰",["groß","gross"]],["klein","클라인","작은",["klein"]],["messen","메센","재다",["messen","messe","misst"]],["Wand","반트","벽",["wand"]],["Tür","튀어","문",["tür","tuer"]],["Fenster","펜스터","창문",["fenster"]],["Maß","마스","치수",["maß","mass","maße"]]],
-  b:["도면 보며 방 크기 얘기","벽 길이 재기","문·창문 위치","수정할 치수 정하기"]},
+  b:["방 크기", "벽 길이 재기", "문·창문 위치", "창문이 너무 작음", "치수 수정", "고객이 더 큰 방을 원함"]},
  {t:"부탁과 요청",g:"Kannst du mir … geben? — 조동사 können, 3격 mir/dir",
   v:[["können","쾨넨","~할 수 있다",["können","kann","kannst","koennen"]],["geben","게벤","주다",["geben","gebe","gibst","gibt"]],["zeigen","차이겐","보여 주다",["zeigen","zeige","zeigst","zeigt"]],["schicken","쉬켄","보내다",["schicken","schicke","schickst","schickt"]],["helfen","헬펜","돕다",["helfen","helfe","hilfst","hilft"]],["Moment","모멘트","잠깐",["moment"]],["sofort","조포르트","바로",["sofort"]],["fertig","페르티히","다 된",["fertig"]],["noch","노흐","아직·더",["noch"]],["mir","미어","나에게",["mir","dir"]]],
-  b:["도면 보여 달라고 하기","메일로 보내 달라고 하기","잠깐만 기다리라고","다 됐는지 확인"]},
+  b:["도면 보여 달라기", "메일로 보내 달라기", "잠깐 기다려 달라기", "도와 달라기", "다 됐는지 확인", "고맙다고 커피 사기"]},
  {t:"문제와 고장",g:"Der Drucker funktioniert nicht. — 부정 nicht, 이유 묻기 warum",
-  v:[["kaputt","카푸트","고장 난",["kaputt"]],["Problem","프로블렘","문제",["problem"]],["funktionieren","풍크치오니렌","작동하다",["funktionieren","funktioniert"]],["nicht","니히트","~아니다",["nicht"]],["warum","바룸","왜",["warum"]],["reparieren","레파리렌","고치다",["reparieren","repariere","reparierst","repariert"]],["Fehler","펠러","실수·오류",["fehler"]],["schnell","슈넬","빨리",["schnell"]],["langsam","랑잠","천천히",["langsam"]],["Hilfe","힐페","도움",["hilfe"]]],
-  b:["프린터가 안 됨","왜 안 되는지 같이 보기","고칠 수 있는지, 누구 부를지","해결되고 한마디"]}
+  v:[["kaputt","카푸트","고장 난",["kaputt"]],["Problem","프로블렘","문제",["problem"]],["funktionieren","풍크치오니렌","작동하다",["funktionieren","funktioniert"]],["nicht","니히트","~아니다",["nicht"]],["warum","바룸","왜",["warum"],{q:1}],["reparieren","레파리렌","고치다",["reparieren","repariere","reparierst","repariert"]],["Fehler","펠러","실수·오류",["fehler"]],["schnell","슈넬","빨리",["schnell"]],["langsam","랑잠","천천히",["langsam"]],["Hilfe","힐페","도움",["hilfe"]]],
+  b:["프린터 고장", "컴퓨터가 느림", "왜 안 되는지", "누가 고칠 수 있는지", "도면에서 실수 발견", "해결되고 한숨 돌림"]}
 ];
 function chOn(){return cfg.lang==="de-DE"&&CH[chNow()]}
 function chNow(){return Math.min(CH.length-1,Math.max(0,Number(cfg.ch)||0))}
 function chUsed(){cfg.used=cfg.used||{}; var u=cfg.used[chNow()]=cfg.used[chNow()]||{}; return u}
+function deN(t){return String(t).toLowerCase().replace(/ä|ae/g,"a").replace(/ö|oe/g,"o").replace(/ü|ue/g,"u").replace(/ß/g,"ss").replace(/['’`´]/g,"")}
 function chMark(text){
-  var c=chOn(); if(!c)return; var u=chUsed(), t=" "+String(text).toLowerCase().replace(/[^\p{L}\p{N}']+/gu," ")+" ", hit=false;
-  c.v.forEach(function(w){ if(w[3].some(function(f){return t.indexOf(" "+f+" ")>=0})){u[w[0]]=(u[w[0]]||0)+1;hit=true} });
+  var c=chOn(); if(!c)return; var u=chUsed(), t=" "+deN(text).replace(/[^\p{L}\p{N}]+/gu," ")+" ", hit=false;
+  c.v.forEach(function(w){ if(w[3].some(function(f){return t.indexOf(" "+deN(f).replace(/[^\p{L}\p{N}]+/gu," ").trim()+" ")>=0})){u[w[0]]=(u[w[0]]||0)+1;hit=true} });
   if(hit)save("mb_cfg",cfg); showCh();
 }
 function chLeft(){var c=chOn(); if(!c)return []; var u=chUsed(); return c.v.filter(function(w){return !u[w[0]]})}
 function chTurns(){var s=cfg.chStart||0; return Math.max(0,hist.filter(function(x){return x.r==="me"}).length-s)}
-function chBeat(){var c=chOn(); return c?c.b[Math.min(c.b.length-1,Math.floor(chTurns()/3))]:""}
+function chBeatIdx(){var c=chOn(); return c?Math.floor(chTurns()/2)%c.b.length:0}
+function chBeat(){var c=chOn(); return c?c.b[chBeatIdx()]:""}
+function chLast(){var c=chOn(); return !!c&&chBeatIdx()===c.b.length-1}
+/* 이번 턴 목표 단어: 안 써 본 단어 중 최근에 안 노린 것, 많이 노렸던 건 뒤로 */
+var curTgt=null;
+function chTarget(){
+  var c=chOn(); if(!c)return null; var u=chUsed(), rec=cfg.tgtRec||[], cnt=cfg.tgtCnt||{};
+  var bi=chBeatIdx(), fit=function(w){return !(w[4]&&w[4].at)||w[4].at.indexOf(bi)>=0};
+  var pool=c.v.filter(function(w){return fit(w)&&!u[w[0]]&&rec.indexOf(w[0])<0});
+  if(!pool.length)pool=c.v.filter(function(w){return fit(w)&&rec.indexOf(w[0])<0});
+  pool.sort(function(a,b){return ((u[a[0]]||0)*3+(cnt[a[0]]||0))-((u[b[0]]||0)*3+(cnt[b[0]]||0))});
+  return pool[0]||null;
+}
+function tgtDone(){ if(!curTgt)return; cfg.tgtRec=(cfg.tgtRec||[]).concat([curTgt[0]]).slice(-3); cfg.tgtCnt=cfg.tgtCnt||{}; cfg.tgtCnt[curTgt[0]]=(cfg.tgtCnt[curTgt[0]]||0)+1; save("mb_cfg",cfg); }
+/* 최근 질문과 겹치는지 */
+var QSTOP={du:1,ich:1,und:1,auch:1,noch:1,heute:1,dir:1,mir:1,es:1,der:1,die:1,das:1,den:1,dem:1,ein:1,eine:1,einen:1,ja:1,nein:1,denn:1,jetzt:1,mal:1,so:1,schon:1,gerne:1,gern:1};
+function lastQ(say){var qs=String(say||"").split(/(?<=[.!?])\s+/).filter(function(x){return /[?？]\s*$/.test(x)}); return qs.length?qs[qs.length-1]:""}
+function qSet(q){var o={}; deN(q).replace(/\bgehts\b/g,"geht").replace(/[^\p{L}\p{N}]+/gu," ").split(" ").forEach(function(w){if(w&&!QSTOP[w])o[w]=1}); return Object.keys(o)}
+function recentQs(n){return hist.filter(function(x){return x.r==="ai"}).slice(-(n||4)).map(function(x){return lastQ(x.say)}).filter(Boolean)}
+function qDup(q){var a=qSet(q); if(!a.length)return "";
+  var hit=""; recentQs(8).forEach(function(p){var b=qSet(p); if(!b.length)return; var i=a.filter(function(w){return b.indexOf(w)>=0}).length, mn=Math.min(a.length,b.length);
+    if((mn===1&&i===1&&a.length===b.length)||(mn>=2&&i===mn)||(i/Math.max(a.length,b.length)>=0.8))hit=p}); return hit}
 function showCh(){
   var bar=$("chbar"); if(!bar)return; var c=chOn(); bar.hidden=!c; if(!c)return;
   var u=chUsed(), n=c.v.filter(function(w){return u[w[0]]}).length;
@@ -366,7 +388,7 @@ function showCh(){
   var done=n>=c.v.length&&chTurns()>=10;
   $("chNext").hidden=!done||chNow()>=CH.length-1;
 }
-function setCh(i,why){cfg.ch=Math.min(CH.length-1,Math.max(0,i)); cfg.chStart=hist.filter(function(x){return x.r==="me"}).length; save("mb_cfg",cfg); showCh(); if(why)note(why)}
+function setCh(i,why){cfg.ch=Math.min(CH.length-1,Math.max(0,i)); cfg.tgtRec=[]; cfg.tgtCnt={}; cfg.chStart=hist.filter(function(x){return x.r==="me"}).length; save("mb_cfg",cfg); showCh(); if(why)note(why)}
 
 function pickScene(lv){var a=lv<=3?SCENES_EASY.concat(SCENES_WORK.slice(0,3)):SCENES_EASY.slice(0,4).concat(SCENES_WORK);return a[Math.floor(Math.random()*a.length)]}
 
@@ -381,12 +403,12 @@ function rules(){
    "",
    "[학습자]",
    "- "+(kid?"아이":"성인")+(cfg.age?", "+cfg.age+"세":"")+". 배우는 언어: "+L+" ("+cfg.lang+").",
-   (chOn()?"- 이번 대화의 장면 흐름: "+chOn().b.join(" → ")+". 지금 단계: "+chBeat()+". 이 단계 안에서 대화해.":
+   (chOn()?(chBeatIdx()===0&&chTurns()>=chOn().b.length*2?"- 다음 날이 됐어. 어제 작별 인사는 끝났으니 새로 아침 인사하며 시작해.\n":"")+"- 지금 장면: "+chBeat()+". 이번 턴에는 이 장면 얘기를 해. 이미 지나간 얘기(앞에서 물어서 답을 들은 것)로 돌아가지 마.":
     ut<=1?"- 관심사: "+(cfg.likes||"자유")+". 이번 대화는 이 상황으로 열어: "+pickScene(lv)+"."
     :ut%6===0?"- 관심사: "+(cfg.likes||"자유")+". 이번 턴에는 지금 화제에서 이 관심사 쪽으로 자연스럽게 다리를 놓아 화제를 넘겨도 돼."
     :"- 이번 턴에는 화제를 바꾸지 마. 학습자가 방금 한 말에 나온 것에 대해서만 반응하고 물어. 일, 현장, 공구 얘기를 네가 먼저 꺼내지 마."),
    "- 자주 틀리는 것: "+(cfg.weak||"없음")+".",
-   (chOn()?"\n[이번 챕터: "+(chNow()+1)+"장 "+chOn().t+"]\n- 핵심 단어(이것만 반복해서 익히는 게 목표): "+chOn().v.map(function(w){return w[0]+"("+w[2]+")"}).join(", ")+"\n- 문법 초점: "+chOn().g+"\n- 학습자가 아직 안 써 본 핵심 단어: "+(chLeft().map(function(w){return w[0]}).join(", ")||"없음")+"\n- 규칙: say에 핵심 단어를 매 턴 2개 이상 넣어. 질문은 학습자가 아직 안 써 본 핵심 단어로 답하게 유도하는 걸로 해. options 중 적어도 하나에는 그 단어를 넣어. 핵심 단어 밖의 새 단어는 한 턴에 최대 1개만, 그것도 꼭 필요할 때만. 챕터 밖 어려운 단어로 화제를 넓히지 마.\n- 지루하지 않게: 세 턴에 한 번은 질문만 하지 말고 네 얘기 한마디(나도 …), 작은 사건(커피가 떨어짐, 프린터가 멈춤), 가벼운 농담 중 하나를 섞어. 같은 질문 형태(예: Hast du …?)를 연달아 쓰지 마. JSON 문자열 안에서는 큰따옴표를 쓰지 마.":""),
+   (chOn()?"\n[이번 챕터: "+(chNow()+1)+"장 "+chOn().t+"]\n- 핵심 단어(이걸 반복해서 익히는 게 목표): "+chOn().v.map(function(w){return w[0]+"("+w[2]+")"}).join(", ")+"\n- 문법 초점: "+chOn().g+(curTgt?"\n- 이번 턴 목표 단어: "+curTgt[0]+"("+curTgt[2]+"). "+(curTgt[4]&&curTgt[4].q?"이건 묻는 말이야. 학습자가 이 말로 너에게 되묻게 하려고, options 하나를 '짧은 답 + 이 말로 되묻기'로 만들어(이 경우만 options에 질문 허용). say에서 네가 이 질문을 하지는 마.":"지금 장면 안에서, 학습자가 답할 때 이 단어를 쓰게 되는 질문을 해. options 중 하나에 이 단어를 넣어. 장면에 도저히 안 맞으면 억지로 넣지 마."):"")+"\n- say에는 핵심 단어를 1~2개 자연스럽게 넣어. 핵심 단어 밖의 새 단어는 한 턴에 최대 1개.\n- "+(chLast()?"지금은 마지막 장면이라 작별 인사로 마무리해도 돼.":"아직 대화를 끝내지 마. 작별 인사(Tschüss, bis morgen 같은 것)는 마지막 장면에서만 해.")+"\n- 지루하지 않게: 세 턴에 한 번은 네 얘기 한마디, 작은 사건, 가벼운 농담 중 하나를 섞어. 그래도 say의 마지막은 질문이야. 같은 꼴의 질문을 연달아 쓰지 마. JSON 문자열 안에서는 큰따옴표를 쓰지 마.":""),
    "- 한 번 대화 시간: 약 "+cfg.minutes+"분.",
    "",
    "[난이도 "+lv+"/10 — 반드시 지켜]",
@@ -395,6 +417,7 @@ function rules(){
    "이 범위를 넘는 문법, 긴 문장, 어려운 단어는 쓰지 마. options와 repeat도 같은 난이도야.",
    "",
    (lastSay?"[네가 바로 앞에서 한 말]\n"+lastSay+"\n":""),
+   (recentQs(8).length?"[최근에 네가 한 질문 — 이것들과 같거나 뜻이 비슷한 질문은 다시 하지 마]\n"+recentQs(8).join("\n")+"\n":""),
    "[매 턴 순서]",
    "1. 학습자의 마지막 말이 셋 중 무엇인지 먼저 정해.",
    "   (가) 대화에 대한 답  (나) 질문: 단어 뜻, 문법, '~를 어떻게 말해?'  (다) 모르겠다, 다시 말해 달라  (라) 대화에 대한 답인데 한국어로 말함",
@@ -405,7 +428,10 @@ function rules(){
    "",
    "[say]",
    "- 학습자가 방금 한 말이 우선이야. 네가 꺼낸 장면이나 물건을 고집하지 마. 학습자가 커피 얘기를 하면 커피 얘기를 이어 가.",
-   "- 한 화제를 네다섯 번 주고받은 뒤에만 바꾸고, 바꿀 때도 앞 얘기와 이어지게 해.",
+   (chOn()?"- 학습자가 이미 답한 건 다시 묻지 마. 한 번 물은 건 끝난 얘기야. 학습자가 방금 말한 내용을 되묻지도 마(예: 학습자가 기분이 좋다고 했는데 기분이 어떠냐고 묻기 금지).":"- 한 화제를 네다섯 번 주고받은 뒤에만 바꾸고, 바꿀 때도 앞 얘기와 이어지게 해."),
+   "- 'Danke für die Antwort' 같은 기계적인 말은 하지 마.",
+   "- 학습자가 질문과 어긋난 답을 해도 지적하지 말고 자연스럽게 받아 주고 질문으로 이어 가.",
+   "- 학습자가 너에게 되물으면(Und du?, Wie geht's dir? 같은 것) 먼저 네 얘기로 짧게 답하고, 그다음 새 질문을 해.",
    "- 대화의 첫마디라면 네가 가벼운 상황 하나를 골라서 시작해. 학습자에게 고르라고 하지 마.",
    "- 접속사와 종속절은 자연스러울 때만 써. 문장마다 억지로 붙이지 마.",
    "- say, repeat, options 안에는 괄호 주석이나 한국어를 절대 넣지 마. 설명은 words의 ko에만 써.",
@@ -422,7 +448,7 @@ function rules(){
    "",
    "[note] 학습자가 질문했을 때((나))만 써. 그 밖에는 반드시 빈칸.",
    "[repeat] 학습자가 직접 소리 내어 말해 볼 만한 "+L+" 한 문장(고친 문장이나 답 예시 중 하나). 따라 말하기 양: "+cfg.repeat+" (없음=항상 빈칸, 조금=가끔, 많이=거의 매번).",
-   "[options] 2~3개. say의 질문에 학습자가 할 수 있는 답이야. 반드시 평서문이고, 질문을 넣지 마. t="+L+" 문장, ko=한국어 뜻.",
+   "[options] 2~3개. say의 질문에 학습자가 할 수 있는 답이야. 반드시 평서문이고, 질문을 넣지 마. 서로 방향이 다른 답으로(예: 긍정 / 부정 / 다른 정보). 최근 턴에 나온 답 예시와 같은 문장은 쓰지 마. t="+L+" 문장, ko=한국어 뜻.",
    "[words] say에 나온 모든 단어를 빠짐없이 순서대로. w=단어(문장에 쓰인 꼴 그대로), pron=한글 발음 표기, ko=뜻.",
    "",
    "[한국어 말투]",
@@ -618,19 +644,28 @@ function tooLong(say){
   var mx=Math.max.apply(null,ss.map(wc).concat([0]));
   return (ss.length>LVSENT[lv]?ss.length-LVSENT[lv]:0)*100+Math.max(0,mx-LVW[lv]);
 }
+/* 답을 받고, 규칙을 어겼으면 문제를 모아서 딱 한 번만 다시 받는다 */
+var BYE=/(tschüss|tschuess|tschüs|bis morgen|bis bald|bis dann|bis später|gute nacht|mach'?s gut|schlaf gut|auf wiedersehen|schönen feierabend)/i;
+function probs(m){
+  var p=[], q=lastQ(m.say);
+  if(cfg.showOpts&&!(m.options&&m.options.length))p.push(["opts",3,"options가 빠졌어. 2~3개 꼭 넣어."]);
+  if(chOn()&&!chLast()&&(BYE.test(m.say)||(m.options||[]).some(function(o){return BYE.test(o.t)})))p.push(["bye",5,"아직 마지막 장면이 아니야. 작별 인사 하지 말고 대화를 이어 가. 다음 장면은 '"+chBeat()+"'이야. 학습자가 작별 인사를 했어도 장난스럽게 붙잡고(예: 잠깐, 하나만 더!) 그 장면 질문을 해."]);
+  if(!(chOn()&&chLast())&&!/[?？]/.test(m.say))p.push(["noq",4,"say가 질문으로 끝나지 않았어. 학습자가 답할 질문 하나로 끝내."]);
+  if(curTgt&&curTgt[4]&&curTgt[4].q&&q){var tq=" "+deN(q).replace(/[^\p{L}\p{N}]+/gu," ")+" "; if(curTgt[3].some(function(f){return tq.indexOf(" "+deN(f).replace(/[^\p{L}\p{N}]+/gu," ").trim()+" ")>=0}))p.push(["tgtq",3,"'"+curTgt[0]+"'은 학습자가 너에게 묻게 할 말이야. say에서 네가 이걸로 묻지 말고, options 하나를 '짧은 답 + "+curTgt[0]+"' 꼴로 만들어."])}
+  var d=q&&qDup(q); if(d)p.push(["dup",4,"질문 '"+q+"'은 최근에 한 '"+d+"'과 사실상 같아. 지금 장면("+(chBeat()||"지금 화제")+")에 맞는 새 질문을 해."]);
+  var over=tooLong(m.say); if(over)p.push(["long",over>=100?3:1,"say가 난이도 "+lvNow()+"에 비해 길어. 본문 "+LVSENT[lvNow()]+"문장, 문장당 단어 "+LVW[lvNow()]+"개 이하로."]);
+  return p;
+}
+function pscore(p){return p.reduce(function(a,x){return a+x[1]},0)}
 async function askTurn(){
   var m;
   try{m=clean(await ai(rules(),turns()))}
   catch(e){ if(e.code!=="invalid_json")throw e;
     m=clean(await ai(rules()+"\n\n[중요] 방금 답이 올바른 JSON이 아니었어. 이번엔 코드 펜스 없이 JSON 객체 하나만 내. 문자열 안의 큰따옴표는 쓰지 말고 작은따옴표로 바꿔.",turns())); }
-  if(cfg.showOpts&&!(m.options&&m.options.length)){
-    try{var m3=clean(await ai(rules()+"\n\n[다시 쓰기] 방금 답에 options가 빠졌어. 같은 say로, options 2~3개를 꼭 넣어서 JSON 전체를 다시 내.",turns())); if(m3.options&&m3.options.length)m=m3;}catch(e){}
-  }
-  var over=tooLong(m.say);
-  if(!over)return m;
+  var p=probs(m); if(!p.length)return m;
   try{
-    var m2=clean(await ai(rules()+"\n\n[다시 쓰기] 네가 방금 낸 say는 '"+m.say+"'였는데 난이도 "+lvNow()+"에 비해 너무 길어. 같은 내용을 본문 "+LVSENT[lvNow()]+"문장, 문장당 단어 "+LVW[lvNow()]+"개 이하로 줄여서 같은 JSON 형식으로 다시 써. words, options, ko도 새 say에 맞춰.",turns()));
-    if(tooLong(m2.say)<over){m2.fix=m2.fix||m.fix; m2.note=m2.note||m.note; return m2}
+    var m2=clean(await ai(rules()+"\n\n[다시 쓰기] 네가 방금 낸 say는 '"+m.say+"'였는데 고칠 게 있어:\n- "+p.map(function(x){return x[2]}).join("\n- ")+"\n학습자가 방금 한 말에 한마디 반응하는 건 유지하고, JSON 전체를 다시 내. words, options, ko도 새 say에 맞춰.",turns()));
+    if(pscore(probs(m2))<pscore(p)){m2.fix=m2.fix||m.fix; m2.note=m2.note||m.note; if(!(m2.options&&m2.options.length))m2.options=m.options; return m2}
   }catch(e){}
   return m;
 }
@@ -666,7 +701,8 @@ async function send(text,viaOption){
   if(!viaOption&&!/[가-힣]/.test(text))chMark(text);
   setStatus("생각하는 중…");
   try{
-    var m=tidy(await askTurn(),text); prefetch(m);
+    curTgt=chTarget();
+    var m=tidy(await askTurn(),text); prefetch(m); tgtDone();
     if(!viaOption&&!/[가-힣]/.test(text)){
       if(m.fix){cfg.streak=0;cfg.miss=(cfg.miss||0)+1; if(cfg.miss>=3&&lvNow()>LVMIN){setTimeout(function(){setLv(lvNow()-1,"세 번 연속 걸려서 한 단계 내렸어.")},0)} else save("mb_cfg",cfg)}
       else{cfg.miss=0;cfg.streak=(cfg.streak||0)+1; if(cfg.streak>=5&&lvNow()<10){setTimeout(function(){setLv(lvNow()+1,"다섯 번 연속 맞아서 한 단계 올렸어.")},0)} else save("mb_cfg",cfg)}
