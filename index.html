@@ -256,8 +256,8 @@ function bubble(m,veil){
     if(m.repeat){var r=el("div","rep");r.appendChild(el("small",null,"따라 말해요"));r.appendChild(wordify(el("span"),m.repeat,m,b));b.appendChild(r);}
     if(m.note)b.insertBefore(el("p","ans",m.note),b.firstChild);
     if(m.fix)b.insertBefore(el("p","fix",m.fix),b.firstChild);
-    if(cfg.showWords&&m.words&&m.words.length){var w=el("div","words x");
-      m.words.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));c.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();speak(x.w,null)};w.appendChild(c)});b.appendChild(w);}
+    if(cfg.showWords){var w=el("div","words x"), has=m.words&&m.words.length, list=has?m.words:fromDict(m.say);
+      drawWords(w,list,b); w.hidden=!list.length; b.appendChild(w); if(!has)WB.set(m,{box:w,b:b});}
     var a=el("div","acts");
     var again=el("button",null,"다시 듣기");again.type="button";again.onclick=function(e){e.stopPropagation();speak(m.say,null)};a.appendChild(again);
     if(m.repeat){var rp=el("button",null,"따라 할 문장 듣기");rp.type="button";rp.onclick=function(e){e.stopPropagation();speak(m.repeat,null)};a.appendChild(rp);}
@@ -430,7 +430,8 @@ function rules(){
    "ko는 say를 정확히 옮긴 뜻이야. 의역해서 뜻을 바꾸지 마.",
    "",
    "[형식]",
-   '반드시 JSON 하나만: {"say":"","ko":"","repeat":"","fix":"","note":"","words":[{"w":"","pron":"","ko":""}],"options":[{"t":"","ko":""}]}',
+   '반드시 JSON 하나만: {"say":"","ko":"","fix":"","note":"","options":[{"t":"","ko":""}],"repeat":"","words":[{"w":"","pron":"","ko":""}]}',
+   "options와 words는 절대 빼먹지 마. 둘 다 매 답마다 꼭 채워.",
    "say, repeat, words의 w, options의 t는 "+L+"로만. ko, pron, fix, note는 한국어로. JSON 밖에는 아무것도 쓰지 마.",
    "",
    "[내기 전에 확인]",
@@ -454,22 +455,35 @@ function clean(o){
     words:(Array.isArray(o.words)?o.words:[]).filter(function(x){return x&&x.w}).slice(0,20).map(function(x){return {w:String(x.w),pron:String(x.pron||""),ko:String(x.ko||"")}}),
     options:(Array.isArray(o.options)?o.options:[]).filter(function(x){return x&&x.t}).slice(0,3).map(function(x){return {t:np(x.t),ko:String(x.ko||"")}})};
 }
+/* AI 답에서 JSON 꺼내기: 첫 객체를 괄호 짝으로 찾고, 깨졌거나 잘렸으면 필드별로 건진다 */
+function scanObj(t,a){var d=0,s=false,e=false;for(var i=a;i<t.length;i++){var c=t[i];
+  if(s){if(e)e=false;else if(c==="\\")e=true;else if(c==='"')s=false;continue}
+  if(c==='"')s=true;else if(c==="{")d++;else if(c==="}"){d--;if(d===0)return i}}return -1}
+function salvArr(raw,key){
+  var m=new RegExp('"'+key+'"\\s*:\\s*\\[').exec(raw); if(!m)return null;
+  var out=[],d=0,st=-1,s=false,e=false;
+  for(var i=m.index+m[0].length;i<raw.length;i++){var c=raw[i];
+    if(s){if(e)e=false;else if(c==="\\")e=true;else if(c==='"')s=false;continue}
+    if(c==='"')s=true;
+    else if(c==="{"){if(d===0)st=i;d++}
+    else if(c==="}"){d--;if(d===0&&st>=0){try{out.push(JSON.parse(raw.slice(st,i+1)))}catch(x){} st=-1}}
+    else if(c==="]"&&d===0)break;}
+  return out;
+}
 function pj(txt){
   txt=String(txt||"").replace(/```[a-z]*|```/gi,"");
-  var a=txt.indexOf("{"),b=txt.lastIndexOf("}"), raw=txt.slice(a,b+1);
-  if(a<0||b<0)throw {code:"invalid_json",raw:txt};
+  var a=txt.indexOf("{"); if(a<0)throw {code:"invalid_json",raw:txt};
+  var b=scanObj(txt,a), raw=b>0?txt.slice(a,b+1):txt.slice(a);
   try{return JSON.parse(raw)}catch(e){}
-  /* 흔한 깨짐 고치기: 후행 쉼표, 제어문자 */
   var fixed=raw.replace(/,\s*([}\]])/g,"$1").replace(/[\u0000-\u001f]+/g," ");
   try{return JSON.parse(fixed)}catch(e){}
-  /* 필드별로 건지기 (문자열 안 따옴표가 깨진 경우) */
   var o={}, ok=false, keys=["say","ko","repeat","fix","note","words","options"];
-  keys.forEach(function(k,i){
-    var m=fixed.match(new RegExp('"'+k+'"\\s*:\\s*([\\s\\S]*?)\\s*(?:,\\s*"(?:'+keys.filter(function(x){return x!==k}).join("|")+')"\\s*:|}\\s*$)'));
-    if(!m)return; var v=m[1].trim();
-    if(k==="words"||k==="options"){try{o[k]=JSON.parse(v)}catch(e){} return}
-    v=v.replace(/^"|"$/g,"").replace(/\\"/g,'"').replace(/\\n/g," "); o[k]=v; if(k==="say"&&v)ok=true;
+  ["say","ko","repeat","fix","note"].forEach(function(k){
+    var m=fixed.match(new RegExp('"'+k+'"\\s*:\\s*"([\\s\\S]*?)"\\s*(?:,\\s*"(?:'+keys.filter(function(x){return x!==k}).join("|")+')"\\s*:|}\\s*$)'))
+        ||fixed.match(new RegExp('"'+k+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'));
+    if(!m)return; var v=m[1].replace(/\\"/g,'"').replace(/\\n/g," ").trim(); o[k]=v; if(k==="say"&&v)ok=true;
   });
+  ["words","options"].forEach(function(k){var v=salvArr(fixed,k); if(v)o[k]=v});
   if(ok)return o;
   throw {code:"invalid_json",raw:raw};
 }
@@ -495,7 +509,7 @@ async function askGemini(sys,msgs){
 async function askAnthropic(sys,msgs){
   var h={"x-api-key":cfg.ckey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}; if(cfg.cws)h["anthropic-workspace-id"]=cfg.cws;
   var j=await post("https://api.anthropic.com/v1/messages",h,
-    {model:cfg.cmodel||DEF.cmodel,max_tokens:1200,system:sys,messages:msgs});
+    {model:cfg.cmodel||DEF.cmodel,max_tokens:4000,system:sys,messages:msgs});
   if(j&&j.type==="error")throw {code:"http",status:j.error&&/model/.test(j.error.message||"")?404:400};
   var txt=""; try{txt=j.content.map(function(p){return p.text||""}).join("")}catch(e){throw {code:"invalid_json"}}
   return pj(txt);
@@ -553,6 +567,12 @@ var SEED={"hallo":["할로","안녕"],"schön":["쇤","반가운, 좋은"],"dich
 Object.keys(SEED).forEach(function(w){var k="de-DE|"+w; if(!dict[k])dict[k]={pron:SEED[w][0],ko:SEED[w][1]}});
 var pending={};
 function wkey(w){return cfg.lang+"|"+w.toLowerCase()}
+var WB=new Map();
+function fromDict(say){var out=[],seen={}; if(typeof dict==="undefined")return out;
+  String(say||"").split(/\s+/).forEach(function(t){var w=stripW(t),k=w.toLowerCase(); if(!w||seen[k])return; seen[k]=1; var d=dict[wkey(w)]; if(d)out.push({w:w,pron:d.pron||"",ko:d.ko||""})}); return out}
+function drawWords(box,list,b){box.textContent="";
+  list.forEach(function(x){var c=el("span","wd");c.appendChild(el("b",null,x.w));c.appendChild(el("i",null,x.pron));c.appendChild(el("em",null,x.ko));c.onclick=function(e){if(b.classList.contains("veil"))return;e.stopPropagation();speak(x.w,null)};box.appendChild(c)})}
+function refillWords(){var ch=false; WB.forEach(function(v,m){var l=fromDict(m.say); drawWords(v.box,l,v.b); v.box.hidden=!l.length; if(l.length){m.words=l;ch=true;WB.delete(m)}}); if(ch)save("mb_hist",hist)}
 function stripW(t){return t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"")}
 /* 답이 오자마자 그 안의 단어를 한 번에 미리 찾아 둔다 → 누르면 바로 뜬다 */
 function prefetch(m){
@@ -560,11 +580,11 @@ function prefetch(m){
   var texts=[m.say,m.repeat||""].concat((m.options||[]).map(function(x){return x.t})).filter(Boolean), need=[];
   texts.join(" ").split(/\s+/).forEach(function(t){var w=stripW(t); if(!w)return; var k=wkey(w);
     if(dict[k]||pending[k]||need.some(function(n){return n.toLowerCase()===w.toLowerCase()}))return; need.push(w)});
-  if(!need.length){save("mb_dict",dict);return}
+  if(!need.length){save("mb_dict",dict);setTimeout(refillWords,0);return}
   need=need.slice(0,40);
   var pr=ai("너는 "+(LANGS[cfg.lang]||cfg.lang)+" 사전이야. 아래 단어 목록 각각의 한글 발음 표기와, 주어진 문장 속에서의 한국어 뜻을 짧게 알려 줘. 목록의 단어를 하나도 빼지 말고 철자 그대로 w에 넣어. 반드시 JSON 하나만: {\"words\":[{\"w\":\"단어\",\"pron\":\"한글 발음\",\"ko\":\"뜻\"}]}",
       [{role:"user",content:"문장들:\n"+texts.join("\n")+"\n단어 목록: "+need.join(", ")}])
-    .then(function(o){(o&&Array.isArray(o.words)?o.words:[]).forEach(function(x){if(x&&x.w)dict[wkey(String(x.w))]={pron:String(x.pron||""),ko:String(x.ko||"")}}); save("mb_dict",dict)})
+    .then(function(o){(o&&Array.isArray(o.words)?o.words:[]).forEach(function(x){if(x&&x.w)dict[wkey(String(x.w))]={pron:String(x.pron||""),ko:String(x.ko||"")}}); save("mb_dict",dict); refillWords()})
     .catch(function(){})
     .then(function(){need.forEach(function(w){delete pending[wkey(w)]})});
   need.forEach(function(w){pending[wkey(w)]=pr});
@@ -603,6 +623,9 @@ async function askTurn(){
   try{m=clean(await ai(rules(),turns()))}
   catch(e){ if(e.code!=="invalid_json")throw e;
     m=clean(await ai(rules()+"\n\n[중요] 방금 답이 올바른 JSON이 아니었어. 이번엔 코드 펜스 없이 JSON 객체 하나만 내. 문자열 안의 큰따옴표는 쓰지 말고 작은따옴표로 바꿔.",turns())); }
+  if(cfg.showOpts&&!(m.options&&m.options.length)){
+    try{var m3=clean(await ai(rules()+"\n\n[다시 쓰기] 방금 답에 options가 빠졌어. 같은 say로, options 2~3개를 꼭 넣어서 JSON 전체를 다시 내.",turns())); if(m3.options&&m3.options.length)m=m3;}catch(e){}
+  }
   var over=tooLong(m.say);
   if(!over)return m;
   try{
